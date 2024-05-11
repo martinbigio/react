@@ -2958,6 +2958,7 @@ function propagateSuspenseContextChange(
       node = node[5];
     }
     // $FlowFixMe[incompatible-use] found when upgrading Flow
+    // $FlowFixMe
     node[7].return = node[5];
     node = node[7];
   }

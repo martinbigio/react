@@ -70,17 +70,18 @@ function getContextName(type: ReactContext<any>) {
 export function getComponentNameFromOwner(
   owner: Fiber | ReactComponentInfo,
 ): string | null {
-  if (typeof owner.tag === 'number') {
+  if (Array.isArray(owner) && typeof owner[0] === 'number') {
     return getComponentNameFromFiber((owner: any));
   }
-  if (typeof owner.name === 'string') {
+
+  if (typeof owner === 'object' && typeof owner.name === 'string') {
     return owner.name;
   }
   return null;
 }
 
 export default function getComponentNameFromFiber(fiber: Fiber): string | null {
-  const {tag, type} = fiber;
+  const tag = fiber[0];const type = fiber[3];
   switch (tag) {
     case CacheComponent:
       return 'Cache';

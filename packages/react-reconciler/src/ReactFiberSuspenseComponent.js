@@ -96,6 +96,7 @@ export function findFirstSuspended(row: Fiber): null | Fiber {
       }
     } else if (node[6] !== null) {
       node[6][5] = node;
+      // $FlowFixMe
       node = node[6];
       continue;
     }
@@ -109,6 +110,7 @@ export function findFirstSuspended(row: Fiber): null | Fiber {
       node = node[5];
     }
     node[7][5] = node[5];
+    // $FlowFixMe
     node = node[7];
   }
   return null;

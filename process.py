@@ -283,3 +283,13 @@ replace_in_file("packages/react-native-renderer/src/ReactNativePublicCompat.js",
 replace_in_file("packages/react-debug-tools/src/ReactDebugHooks.js", "current")
 replace_in_file("packages/react-debug-tools/src/ReactDebugHooks.js", "fiber")
 replace_in_file("packages/react-debug-tools/src/ReactDebugHooks.js", "currentFiber")
+
+
+# other fixes
+os.system(f"gsed -i 's/{'const {tag, type} = fiber;'}/{'const tag = fiber[0];const type = fiber[3];'}/g' {'packages/react-reconciler/src/getComponentNameFromFiber.js'}")
+os.system(f"gsed -i 's/{'const {tag} = node;'}/{'const tag = node[0];'}/g' {'packages/react-reconciler/src/ReactFiberCommitWork.js'}")
+
+os.system(f"gsed -i 's/{'const {child, sibling, tag, type} = fiber;'}/{'const child = fiber[6]; const sibling = fiber[7]; const tag = fiber[0]; const type = fiber[3];'}/g' {'packages/react-reconciler/src/ReactFiberHotReloading.js'}")
+os.system(f"gsed -i 's/{'const {alternate, child, sibling, tag, type} = fiber;'}/{'const alternate = fiber[22]; const child = fiber[6]; const sibling = fiber[7]; const tag = fiber[0]; const type = fiber[3];'}/g' {'packages/react-reconciler/src/ReactFiberHotReloading.js'}")
+
+os.system(f"gsed -i 's/{'const {type, memoizedProps, stateNode} = node;'}/{'const type = node[3]; const memoizedProps = node[12]; const stateNode = node[4];'}/g' {'packages/react-reconciler/src/ReactFiberScope.js'}")

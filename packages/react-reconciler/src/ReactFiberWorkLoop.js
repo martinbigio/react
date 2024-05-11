@@ -1273,6 +1273,7 @@ function isRenderConsistentWithExternalStores(finishedWork: Fiber): boolean {
       node = node[5];
     }
     node[7][5] = node[5];
+    // $FlowFixMe
     node = node[7];
   }
   // Flow doesn't know this is unreachable, but eslint does

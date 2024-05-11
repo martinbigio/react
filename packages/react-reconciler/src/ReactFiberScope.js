@@ -40,7 +40,7 @@ function collectScopedNodes(
 ): void {
   if (enableScopeAPI) {
     if (node[0] === HostComponent) {
-      const {type, memoizedProps, stateNode} = node;
+      const type = node[3]; const memoizedProps = node[12]; const stateNode = node[4];
       const instance = getPublicInstance(stateNode);
       if (
         instance !== null &&
@@ -66,7 +66,7 @@ function collectFirstScopedNode(
 ): null | Object {
   if (enableScopeAPI) {
     if (node[0] === HostComponent) {
-      const {type, memoizedProps, stateNode} = node;
+      const type = node[3]; const memoizedProps = node[12]; const stateNode = node[4];
       const instance = getPublicInstance(stateNode);
       if (instance !== null && fn(type, memoizedProps, instance) === true) {
         return instance;

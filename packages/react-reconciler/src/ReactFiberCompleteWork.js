@@ -250,6 +250,7 @@ function appendAllChildren(
       }
       // $FlowFixMe[incompatible-use] found when upgrading Flow
       node[7][5] = node[5];
+      // $FlowFixMe
       node = node[7];
     }
   } else if (supportsPersistence) {
@@ -312,6 +313,7 @@ function appendAllChildren(
       }
       // $FlowFixMe[incompatible-use] found when upgrading Flow
       node[7][5] = node[5];
+      // $FlowFixMe
       node = node[7];
     }
   }
@@ -387,6 +389,7 @@ function appendAllChildrenToContainer(
       }
       // $FlowFixMe[incompatible-use] found when upgrading Flow
       node[7][5] = node[5];
+      // $FlowFixMe
       node = node[7];
     }
   }

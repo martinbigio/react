@@ -272,7 +272,7 @@ function scheduleFibersWithFamiliesRecursively(
   staleFamilies: Set<Family>,
 ): void {
   if (__DEV__) {
-    const {alternate, child, sibling, tag, type} = fiber;
+    const alternate = fiber[22]; const child = fiber[6]; const sibling = fiber[7]; const tag = fiber[0]; const type = fiber[3];
 
     let candidateType = null;
     switch (tag) {
@@ -370,7 +370,7 @@ function findHostInstancesForMatchingFibersRecursively(
   hostInstances: Set<Instance>,
 ) {
   if (__DEV__) {
-    const {child, sibling, tag, type} = fiber;
+    const child = fiber[6]; const sibling = fiber[7]; const tag = fiber[0]; const type = fiber[3];
 
     let candidateType = null;
     switch (tag) {
@@ -473,6 +473,7 @@ function findChildHostInstancesForFiberShallowly(
         // There may still be more, so keep searching.
       } else if (node[6] !== null) {
         node[6][5] = node;
+        // $FlowFixMe
         node = node[6];
         continue;
       }
@@ -486,6 +487,7 @@ function findChildHostInstancesForFiberShallowly(
         node = node[5];
       }
       node[7][5] = node[5];
+      // $FlowFixMe
       node = node[7];
     }
   }

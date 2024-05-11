@@ -1555,6 +1555,7 @@ function hideOrUnhideAllChildren(finishedWork: Fiber, isHidden: boolean) {
         // Don't search any deeper. This tree should remain hidden.
       } else if (node[6] !== null) {
         node[6][5] = node;
+        // $FlowFixMe
         node = node[6];
         continue;
       }
@@ -1579,6 +1580,7 @@ function hideOrUnhideAllChildren(finishedWork: Fiber, isHidden: boolean) {
       }
 
       node[7][5] = node[5];
+      // $FlowFixMe
       node = node[7];
     }
   }
@@ -1762,6 +1764,7 @@ function getHostSibling(fiber: Fiber): ?Instance {
       node = node[5];
     }
     node[7][5] = node[5];
+    // $FlowFixMe
     node = node[7];
     while (
       node[0] !== HostComponent &&
@@ -1781,6 +1784,7 @@ function getHostSibling(fiber: Fiber): ?Instance {
         continue siblings;
       } else {
         node[6][5] = node;
+        // $FlowFixMe
         node = node[6];
       }
     }
@@ -1855,7 +1859,7 @@ function insertOrAppendPlacementNodeIntoContainer(
   before: ?Instance,
   parent: Container,
 ): void {
-  const {tag} = node;
+  const tag = node[0];
   const isHost = tag === HostComponent || tag === HostText;
   if (isHost) {
     const stateNode = node[4];
@@ -1890,7 +1894,7 @@ function insertOrAppendPlacementNode(
   before: ?Instance,
   parent: Instance,
 ): void {
-  const {tag} = node;
+  const tag = node[0];
   const isHost = tag === HostComponent || tag === HostText;
   if (isHost) {
     const stateNode = node[4];

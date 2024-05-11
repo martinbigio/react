@@ -158,7 +158,7 @@ function traverseOwnerTreeUp(
   if (__DEV__ || enableGetInspectorDataForInstanceInProduction) {
     hierarchy.unshift(instance);
     const owner = instance[28];
-    if (owner != null && typeof owner[0] === 'number') {
+    if (owner != null && (Array.isArray(owner) && typeof owner[0] === 'number')) {
       traverseOwnerTreeUp(hierarchy, (owner: any));
     } else {
       // TODO: Traverse Server Components owners.
