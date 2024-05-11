@@ -42,8 +42,8 @@ export function getShellBoundary(): Fiber | null {
 
 export function pushPrimaryTreeSuspenseHandler(handler: Fiber): void {
   // TODO: Pass as argument
-  const current = handler.alternate;
-  const props: SuspenseProps = handler.pendingProps;
+  const current = handler[22];
+  const props: SuspenseProps = handler[11];
 
   // Shallow Suspense context fields, like ForceSuspenseFallback, should only be
   // propagated a single level. For example, when ForceSuspenseFallback is set,
@@ -90,7 +90,7 @@ export function pushPrimaryTreeSuspenseHandler(handler: Fiber): void {
       // This boundary is not visible in the current UI.
       shellBoundary = handler;
     } else {
-      const prevState: SuspenseState = current.memoizedState;
+      const prevState: SuspenseState = current[14];
       if (prevState !== null) {
         // This boundary is showing a fallback in the current UI.
         shellBoundary = handler;
@@ -107,7 +107,7 @@ export function pushFallbackTreeSuspenseHandler(fiber: Fiber): void {
 }
 
 export function pushOffscreenSuspenseHandler(fiber: Fiber): void {
-  if (fiber.tag === OffscreenComponent) {
+  if (fiber[0] === OffscreenComponent) {
     // A SuspenseList context is only pushed here to avoid a push/pop mismatch.
     // Reuse the current value on the stack.
     // TODO: We can avoid needing to push here by by forking popSuspenseHandler
@@ -118,9 +118,9 @@ export function pushOffscreenSuspenseHandler(fiber: Fiber): void {
       // A parent boundary is showing a fallback, so we've already rendered
       // deeper than the shell.
     } else {
-      const current = fiber.alternate;
+      const current = fiber[22];
       if (current !== null) {
-        const prevState: OffscreenState = current.memoizedState;
+        const prevState: OffscreenState = current[14];
         if (prevState !== null) {
           // This is the first boundary in the stack that's already showing
           // a fallback. So everything outside is considered the shell.

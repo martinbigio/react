@@ -29,11 +29,11 @@ import {
 } from 'shared/ReactComponentStackFrame';
 
 function describeFiber(fiber: Fiber): string {
-  switch (fiber.tag) {
+  switch (fiber[0]) {
     case HostHoistable:
     case HostSingleton:
     case HostComponent:
-      return describeBuiltInComponentFrame(fiber.type);
+      return describeBuiltInComponentFrame(fiber[3]);
     case LazyComponent:
       return describeBuiltInComponentFrame('Lazy');
     case SuspenseComponent:
@@ -42,11 +42,11 @@ function describeFiber(fiber: Fiber): string {
       return describeBuiltInComponentFrame('SuspenseList');
     case FunctionComponent:
     case SimpleMemoComponent:
-      return describeFunctionComponentFrame(fiber.type);
+      return describeFunctionComponentFrame(fiber[3]);
     case ForwardRef:
-      return describeFunctionComponentFrame(fiber.type.render);
+      return describeFunctionComponentFrame(fiber[3].render);
     case ClassComponent:
-      return describeClassComponentFrame(fiber.type);
+      return describeClassComponentFrame(fiber[3]);
     default:
       return '';
   }
@@ -60,7 +60,7 @@ export function getStackByFiberInDevAndProd(workInProgress: Fiber): string {
       info += describeFiber(node);
       if (__DEV__) {
         // Add any Server Component stack frames in reverse order.
-        const debugInfo = node._debugInfo;
+        const debugInfo = node[27];
         if (debugInfo) {
           for (let i = debugInfo.length - 1; i >= 0; i--) {
             const entry = debugInfo[i];
@@ -71,7 +71,7 @@ export function getStackByFiberInDevAndProd(workInProgress: Fiber): string {
         }
       }
       // $FlowFixMe[incompatible-type] we bail out when we get a null
-      node = node.return;
+      node = node[5];
     } while (node);
     return info;
   } catch (x) {

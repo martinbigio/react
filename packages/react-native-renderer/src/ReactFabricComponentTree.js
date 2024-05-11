@@ -34,7 +34,7 @@ function getInstanceFromNode(node: Instance | TextInstance): Fiber | null {
 }
 
 function getNodeFromInstance(fiber: Fiber): PublicInstance {
-  const publicInstance = getPublicInstance(fiber.stateNode);
+  const publicInstance = getPublicInstance(fiber[4]);
 
   if (publicInstance == null) {
     throw new Error('Could not find host instance from fiber');

@@ -177,7 +177,7 @@ if (__DEV__) {
 
 export function initializeUpdateQueue<State>(fiber: Fiber): void {
   const queue: UpdateQueue<State> = {
-    baseState: fiber.memoizedState,
+    baseState: fiber[14],
     firstBaseUpdate: null,
     lastBaseUpdate: null,
     shared: {
@@ -187,7 +187,7 @@ export function initializeUpdateQueue<State>(fiber: Fiber): void {
     },
     callbacks: null,
   };
-  fiber.updateQueue = queue;
+  fiber[13] = queue;
 }
 
 export function cloneUpdateQueue<State>(
@@ -195,8 +195,8 @@ export function cloneUpdateQueue<State>(
   workInProgress: Fiber,
 ): void {
   // Clone the update queue from current. Unless it's already a clone.
-  const queue: UpdateQueue<State> = (workInProgress.updateQueue: any);
-  const currentQueue: UpdateQueue<State> = (current.updateQueue: any);
+  const queue: UpdateQueue<State> = (workInProgress[13]: any);
+  const currentQueue: UpdateQueue<State> = (current[13]: any);
   if (queue === currentQueue) {
     const clone: UpdateQueue<State> = {
       baseState: currentQueue.baseState,
@@ -205,7 +205,7 @@ export function cloneUpdateQueue<State>(
       shared: currentQueue.shared,
       callbacks: null,
     };
-    workInProgress.updateQueue = clone;
+    workInProgress[13] = clone;
   }
 }
 
@@ -227,7 +227,7 @@ export function enqueueUpdate<State>(
   update: Update<State>,
   lane: Lane,
 ): FiberRoot | null {
-  const updateQueue = fiber.updateQueue;
+  const updateQueue = fiber[13];
   if (updateQueue === null) {
     // Only occurs if the fiber has been unmounted.
     return null;
@@ -276,7 +276,7 @@ export function enqueueUpdate<State>(
 }
 
 export function entangleTransitions(root: FiberRoot, fiber: Fiber, lane: Lane) {
-  const updateQueue = fiber.updateQueue;
+  const updateQueue = fiber[13];
   if (updateQueue === null) {
     // Only occurs if the fiber has been unmounted.
     return;
@@ -310,12 +310,12 @@ export function enqueueCapturedUpdate<State>(
   // Captured updates are updates that are thrown by a child during the render
   // phase. They should be discarded if the render is aborted. Therefore,
   // we should only put them on the work-in-progress queue, not the current one.
-  let queue: UpdateQueue<State> = (workInProgress.updateQueue: any);
+  let queue: UpdateQueue<State> = (workInProgress[13]: any);
 
   // Check if the work-in-progress queue is a clone.
-  const current = workInProgress.alternate;
+  const current = workInProgress[22];
   if (current !== null) {
-    const currentQueue: UpdateQueue<State> = (current.updateQueue: any);
+    const currentQueue: UpdateQueue<State> = (current[13]: any);
     if (queue === currentQueue) {
       // The work-in-progress queue is the same as current. This happens when
       // we bail out on a parent fiber that then captures an error thrown by
@@ -369,7 +369,7 @@ export function enqueueCapturedUpdate<State>(
         shared: currentQueue.shared,
         callbacks: currentQueue.callbacks,
       };
-      workInProgress.updateQueue = queue;
+      workInProgress[13] = queue;
       return;
     }
   }
@@ -404,7 +404,7 @@ function getStateFromUpdate<State>(
         if (__DEV__) {
           if (
             debugRenderPhaseSideEffectsForStrictMode &&
-            workInProgress.mode & StrictLegacyMode
+            workInProgress[16] & StrictLegacyMode
           ) {
             setIsStrictModeForDevtools(true);
             try {
@@ -421,8 +421,8 @@ function getStateFromUpdate<State>(
       return payload;
     }
     case CaptureUpdate: {
-      workInProgress.flags =
-        (workInProgress.flags & ~ShouldCapture) | DidCapture;
+      workInProgress[17] =
+        (workInProgress[17] & ~ShouldCapture) | DidCapture;
     }
     // Intentional fallthrough
     case UpdateState: {
@@ -437,7 +437,7 @@ function getStateFromUpdate<State>(
         if (__DEV__) {
           if (
             debugRenderPhaseSideEffectsForStrictMode &&
-            workInProgress.mode & StrictLegacyMode
+            workInProgress[16] & StrictLegacyMode
           ) {
             setIsStrictModeForDevtools(true);
             try {
@@ -500,7 +500,7 @@ export function processUpdateQueue<State>(
   didReadFromEntangledAsyncAction = false;
 
   // This is always non-null on a ClassComponent or HostRoot
-  const queue: UpdateQueue<State> = (workInProgress.updateQueue: any);
+  const queue: UpdateQueue<State> = (workInProgress[13]: any);
 
   hasForceUpdate = false;
 
@@ -534,10 +534,10 @@ export function processUpdateQueue<State>(
     // queue is a singly-linked list with no cycles, we can append to both
     // lists and take advantage of structural sharing.
     // TODO: Pass `current` as argument
-    const current = workInProgress.alternate;
+    const current = workInProgress[22];
     if (current !== null) {
       // This is always non-null on a ClassComponent or HostRoot
-      const currentQueue: UpdateQueue<State> = (current.updateQueue: any);
+      const currentQueue: UpdateQueue<State> = (current[13]: any);
       const currentLastBaseUpdate = currentQueue.lastBaseUpdate;
       if (currentLastBaseUpdate !== lastBaseUpdate) {
         if (currentLastBaseUpdate === null) {
@@ -638,9 +638,9 @@ export function processUpdateQueue<State>(
         );
         const callback = update.callback;
         if (callback !== null) {
-          workInProgress.flags |= Callback;
+          workInProgress[17] |= Callback;
           if (isHiddenUpdate) {
-            workInProgress.flags |= Visibility;
+            workInProgress[17] |= Visibility;
           }
           const callbacks = queue.callbacks;
           if (callbacks === null) {
@@ -694,8 +694,8 @@ export function processUpdateQueue<State>(
     // shouldComponentUpdate is tricky; but we'll have to account for
     // that regardless.
     markSkippedUpdateLanes(newLanes);
-    workInProgress.lanes = newLanes;
-    workInProgress.memoizedState = newState;
+    workInProgress[20] = newLanes;
+    workInProgress[14] = newState;
   }
 
   if (__DEV__) {

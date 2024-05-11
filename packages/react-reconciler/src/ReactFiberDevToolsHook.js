@@ -126,7 +126,7 @@ export function onScheduleRoot(root: FiberRoot, children: ReactNodeList) {
 export function onCommitRoot(root: FiberRoot, eventPriority: EventPriority) {
   if (injectedHook && typeof injectedHook.onCommitFiberRoot === 'function') {
     try {
-      const didError = (root.current.flags & DidCapture) === DidCapture;
+      const didError = (root.current[17] & DidCapture) === DidCapture;
       if (enableProfilerTimer) {
         let schedulerPriority;
         switch (eventPriority) {

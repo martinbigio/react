@@ -104,10 +104,10 @@ function enqueueUpdate(
   // The fiber's `lane` field is used in some places to check if any work is
   // scheduled, to perform an eager bailout, so we need to update it immediately.
   // TODO: We should probably move this to the "shared" queue instead.
-  fiber.lanes = mergeLanes(fiber.lanes, lane);
-  const alternate = fiber.alternate;
+  fiber[20] = mergeLanes(fiber[20], lane);
+  const alternate = fiber[22];
   if (alternate !== null) {
-    alternate.lanes = mergeLanes(alternate.lanes, lane);
+    alternate[20] = mergeLanes(alternate[20], lane);
   }
 }
 
@@ -191,23 +191,23 @@ function markUpdateLaneFromFiberToRoot(
   lane: Lane,
 ): void {
   // Update the source fiber's lanes
-  sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
-  let alternate = sourceFiber.alternate;
+  sourceFiber[20] = mergeLanes(sourceFiber[20], lane);
+  let alternate = sourceFiber[22];
   if (alternate !== null) {
-    alternate.lanes = mergeLanes(alternate.lanes, lane);
+    alternate[20] = mergeLanes(alternate[20], lane);
   }
   // Walk the parent path to the root and update the child lanes.
   let isHidden = false;
-  let parent = sourceFiber.return;
+  let parent = sourceFiber[5];
   let node = sourceFiber;
   while (parent !== null) {
-    parent.childLanes = mergeLanes(parent.childLanes, lane);
-    alternate = parent.alternate;
+    parent[21] = mergeLanes(parent[21], lane);
+    alternate = parent[22];
     if (alternate !== null) {
-      alternate.childLanes = mergeLanes(alternate.childLanes, lane);
+      alternate[21] = mergeLanes(alternate[21], lane);
     }
 
-    if (parent.tag === OffscreenComponent) {
+    if (parent[0] === OffscreenComponent) {
       // Check if this offscreen boundary is currently hidden.
       //
       // The instance may be null if the Offscreen parent was unmounted. Usually
@@ -225,7 +225,7 @@ function markUpdateLaneFromFiberToRoot(
       // This case is always accompanied by a warning, but we still need to
       // account for it. (There may be other cases that we haven't discovered,
       // too.)
-      const offscreenInstance: OffscreenInstance | null = parent.stateNode;
+      const offscreenInstance: OffscreenInstance | null = parent[4];
       if (
         offscreenInstance !== null &&
         !(offscreenInstance._visibility & OffscreenVisible)
@@ -235,11 +235,11 @@ function markUpdateLaneFromFiberToRoot(
     }
 
     node = parent;
-    parent = parent.return;
+    parent = parent[5];
   }
 
-  if (isHidden && update !== null && node.tag === HostRoot) {
-    const root: FiberRoot = node.stateNode;
+  if (isHidden && update !== null && node[0] === HostRoot) {
+    const root: FiberRoot = node[4];
     markHiddenUpdate(root, update, lane);
   }
 }
@@ -261,21 +261,21 @@ function getRootForUpdatedFiber(sourceFiber: Fiber): FiberRoot | null {
   // TODO: Consider adding a `root` backpointer on the update queue.
   detectUpdateOnUnmountedFiber(sourceFiber, sourceFiber);
   let node = sourceFiber;
-  let parent = node.return;
+  let parent = node[5];
   while (parent !== null) {
     detectUpdateOnUnmountedFiber(sourceFiber, node);
     node = parent;
-    parent = node.return;
+    parent = node[5];
   }
-  return node.tag === HostRoot ? (node.stateNode: FiberRoot) : null;
+  return node[0] === HostRoot ? (node[4]: FiberRoot) : null;
 }
 
 function detectUpdateOnUnmountedFiber(sourceFiber: Fiber, parent: Fiber) {
   if (__DEV__) {
-    const alternate = parent.alternate;
+    const alternate = parent[22];
     if (
       alternate === null &&
-      (parent.flags & (Placement | Hydrating)) !== NoFlags
+      (parent[17] & (Placement | Hydrating)) !== NoFlags
     ) {
       warnAboutUpdateOnNotYetMountedFiberInDEV(sourceFiber);
     }

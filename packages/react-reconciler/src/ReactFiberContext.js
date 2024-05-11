@@ -65,7 +65,7 @@ function cacheContext(
   if (disableLegacyContext) {
     return;
   } else {
-    const instance = workInProgress.stateNode;
+    const instance = workInProgress[4];
     instance.__reactInternalMemoizedUnmaskedChildContext = unmaskedContext;
     instance.__reactInternalMemoizedMaskedChildContext = maskedContext;
   }
@@ -78,7 +78,7 @@ function getMaskedContext(
   if (disableLegacyContext) {
     return emptyContextObject;
   } else {
-    const type = workInProgress.type;
+    const type = workInProgress[3];
     const contextTypes = type.contextTypes;
     if (!contextTypes) {
       return emptyContextObject;
@@ -87,7 +87,7 @@ function getMaskedContext(
     // Avoid recreating masked context unless unmasked context has changed.
     // Failing to do this will result in unnecessary calls to componentWillReceiveProps.
     // This may trigger infinite loops if componentWillReceiveProps calls setState.
-    const instance = workInProgress.stateNode;
+    const instance = workInProgress[4];
     if (
       instance &&
       instance.__reactInternalMemoizedUnmaskedChildContext === unmaskedContext
@@ -173,7 +173,7 @@ function processChildContext(
   if (disableLegacyContext) {
     return parentContext;
   } else {
-    const instance = fiber.stateNode;
+    const instance = fiber[4];
     const childContextTypes = type.childContextTypes;
 
     // TODO (bvaughn) Replace this behavior with an invariant() in the future.
@@ -215,7 +215,7 @@ function pushContextProvider(workInProgress: Fiber): boolean {
   if (disableLegacyContext) {
     return false;
   } else {
-    const instance = workInProgress.stateNode;
+    const instance = workInProgress[4];
     // We push the context as early as possible to ensure stack integrity.
     // If the instance does not exist yet, we will push null at first,
     // and replace it on the stack later when invalidating the context.
@@ -245,7 +245,7 @@ function invalidateContextProvider(
   if (disableLegacyContext) {
     return;
   } else {
-    const instance = workInProgress.stateNode;
+    const instance = workInProgress[4];
 
     if (!instance) {
       throw new Error(
@@ -285,7 +285,7 @@ function findCurrentUnmaskedContext(fiber: Fiber): Object {
   } else {
     // Currently this is only used with renderSubtreeIntoContainer; not sure if it
     // makes sense elsewhere
-    if (!isFiberMounted(fiber) || fiber.tag !== ClassComponent) {
+    if (!isFiberMounted(fiber) || fiber[0] !== ClassComponent) {
       throw new Error(
         'Expected subtree parent to be a mounted class component. ' +
           'This error is likely caused by a bug in React. Please file an issue.',
@@ -294,19 +294,19 @@ function findCurrentUnmaskedContext(fiber: Fiber): Object {
 
     let node: Fiber = fiber;
     do {
-      switch (node.tag) {
+      switch (node[0]) {
         case HostRoot:
-          return node.stateNode.context;
+          return node[4].context;
         case ClassComponent: {
-          const Component = node.type;
+          const Component = node[3];
           if (isContextProvider(Component)) {
-            return node.stateNode.__reactInternalMemoizedMergedChildContext;
+            return node[4].__reactInternalMemoizedMergedChildContext;
           }
           break;
         }
       }
       // $FlowFixMe[incompatible-type] we bail out when we get a null
-      node = node.return;
+      node = node[5];
     } while (node !== null);
 
     throw new Error(

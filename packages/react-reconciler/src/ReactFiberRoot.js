@@ -198,7 +198,7 @@ export function createFiberRoot(
     concurrentUpdatesByDefaultOverride,
   );
   root.current = uninitializedFiber;
-  uninitializedFiber.stateNode = root;
+  uninitializedFiber[4] = root;
 
   if (enableCache) {
     const initialCache = createCache();
@@ -218,14 +218,14 @@ export function createFiberRoot(
       isDehydrated: hydrate,
       cache: initialCache,
     };
-    uninitializedFiber.memoizedState = initialState;
+    uninitializedFiber[14] = initialState;
   } else {
     const initialState: RootState = {
       element: initialChildren,
       isDehydrated: hydrate,
       cache: (null: any), // not enabled yet
     };
-    uninitializedFiber.memoizedState = initialState;
+    uninitializedFiber[14] = initialState;
   }
 
   initializeUpdateQueue(uninitializedFiber);

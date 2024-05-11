@@ -159,12 +159,12 @@ function applyDerivedStateFromProps(
   getDerivedStateFromProps: (props: any, state: any) => any,
   nextProps: any,
 ) {
-  const prevState = workInProgress.memoizedState;
+  const prevState = workInProgress[14];
   let partialState = getDerivedStateFromProps(nextProps, prevState);
   if (__DEV__) {
     if (
       debugRenderPhaseSideEffectsForStrictMode &&
-      workInProgress.mode & StrictLegacyMode
+      workInProgress[16] & StrictLegacyMode
     ) {
       setIsStrictModeForDevtools(true);
       try {
@@ -181,13 +181,13 @@ function applyDerivedStateFromProps(
     partialState === null || partialState === undefined
       ? prevState
       : assign({}, prevState, partialState);
-  workInProgress.memoizedState = memoizedState;
+  workInProgress[14] = memoizedState;
 
   // Once the update queue is empty, persist the derived state onto the
   // base state.
-  if (workInProgress.lanes === NoLanes) {
+  if (workInProgress[20] === NoLanes) {
     // Queue is always non-null for classes
-    const updateQueue: UpdateQueue<any> = (workInProgress.updateQueue: any);
+    const updateQueue: UpdateQueue<any> = (workInProgress[13]: any);
     updateQueue.baseState = memoizedState;
   }
 }
@@ -306,7 +306,7 @@ function checkShouldComponentUpdate(
   newState: any,
   nextContext: any,
 ) {
-  const instance = workInProgress.stateNode;
+  const instance = workInProgress[4];
   if (typeof instance.shouldComponentUpdate === 'function') {
     let shouldUpdate = instance.shouldComponentUpdate(
       newProps,
@@ -316,7 +316,7 @@ function checkShouldComponentUpdate(
     if (__DEV__) {
       if (
         debugRenderPhaseSideEffectsForStrictMode &&
-        workInProgress.mode & StrictLegacyMode
+        workInProgress[16] & StrictLegacyMode
       ) {
         setIsStrictModeForDevtools(true);
         try {
@@ -352,7 +352,7 @@ function checkShouldComponentUpdate(
 }
 
 function checkClassInstance(workInProgress: Fiber, ctor: any, newProps: any) {
-  const instance = workInProgress.stateNode;
+  const instance = workInProgress[4];
   if (__DEV__) {
     const name = getComponentNameFromType(ctor) || 'Component';
     const renderPresent = instance.render;
@@ -635,7 +635,7 @@ function constructClassInstance(
   if (__DEV__) {
     if (
       debugRenderPhaseSideEffectsForStrictMode &&
-      workInProgress.mode & StrictLegacyMode
+      workInProgress[16] & StrictLegacyMode
     ) {
       setIsStrictModeForDevtools(true);
       try {
@@ -646,12 +646,12 @@ function constructClassInstance(
     }
   }
 
-  const state = (workInProgress.memoizedState =
+  const state = (workInProgress[14] =
     instance.state !== null && instance.state !== undefined
       ? instance.state
       : null);
   instance.updater = classComponentUpdater;
-  workInProgress.stateNode = instance;
+  workInProgress[4] = instance;
   // The instance needs access to the fiber so that it can schedule updates
   setInstance(instance, workInProgress);
   if (__DEV__) {
@@ -816,9 +816,9 @@ function mountClassInstance(
     checkClassInstance(workInProgress, ctor, newProps);
   }
 
-  const instance = workInProgress.stateNode;
+  const instance = workInProgress[4];
   instance.props = newProps;
-  instance.state = workInProgress.memoizedState;
+  instance.state = workInProgress[14];
   instance.refs = {};
 
   initializeUpdateQueue(workInProgress);
@@ -847,7 +847,7 @@ function mountClassInstance(
       }
     }
 
-    if (workInProgress.mode & StrictLegacyMode) {
+    if (workInProgress[16] & StrictLegacyMode) {
       ReactStrictModeWarnings.recordLegacyContextWarning(
         workInProgress,
         instance,
@@ -860,7 +860,7 @@ function mountClassInstance(
     );
   }
 
-  instance.state = workInProgress.memoizedState;
+  instance.state = workInProgress[14];
 
   const getDerivedStateFromProps = ctor.getDerivedStateFromProps;
   if (typeof getDerivedStateFromProps === 'function') {
@@ -870,7 +870,7 @@ function mountClassInstance(
       getDerivedStateFromProps,
       newProps,
     );
-    instance.state = workInProgress.memoizedState;
+    instance.state = workInProgress[14];
   }
 
   // In order to support react-lifecycles-compat polyfilled components,
@@ -886,14 +886,14 @@ function mountClassInstance(
     // process them now.
     processUpdateQueue(workInProgress, newProps, instance, renderLanes);
     suspendIfUpdateReadFromEntangledAsyncAction();
-    instance.state = workInProgress.memoizedState;
+    instance.state = workInProgress[14];
   }
 
   if (typeof instance.componentDidMount === 'function') {
-    workInProgress.flags |= Update | LayoutStatic;
+    workInProgress[17] |= Update | LayoutStatic;
   }
-  if (__DEV__ && (workInProgress.mode & StrictEffectsMode) !== NoMode) {
-    workInProgress.flags |= MountLayoutDev;
+  if (__DEV__ && (workInProgress[16] & StrictEffectsMode) !== NoMode) {
+    workInProgress[17] |= MountLayoutDev;
   }
 }
 
@@ -903,13 +903,13 @@ function resumeMountClassInstance(
   newProps: any,
   renderLanes: Lanes,
 ): boolean {
-  const instance = workInProgress.stateNode;
+  const instance = workInProgress[4];
 
-  const unresolvedOldProps = workInProgress.memoizedProps;
+  const unresolvedOldProps = workInProgress[12];
   const oldProps = resolveClassComponentProps(
     ctor,
     unresolvedOldProps,
-    workInProgress.type === workInProgress.elementType,
+    workInProgress[3] === workInProgress[2],
   );
   instance.props = oldProps;
 
@@ -936,7 +936,7 @@ function resumeMountClassInstance(
   // unresolved props object that is stored on the fiber, rather than the
   // one that gets assigned to the instance, because that object may have been
   // cloned to resolve default props and/or remove `ref`.
-  const unresolvedNewProps = workInProgress.pendingProps;
+  const unresolvedNewProps = workInProgress[11];
   const didReceiveNewProps = unresolvedNewProps !== unresolvedOldProps;
 
   // Note: During these life-cycles, instance.props/instance.state are what
@@ -962,11 +962,11 @@ function resumeMountClassInstance(
 
   resetHasForceUpdateBeforeProcessing();
 
-  const oldState = workInProgress.memoizedState;
+  const oldState = workInProgress[14];
   let newState = (instance.state = oldState);
   processUpdateQueue(workInProgress, newProps, instance, renderLanes);
   suspendIfUpdateReadFromEntangledAsyncAction();
-  newState = workInProgress.memoizedState;
+  newState = workInProgress[14];
   if (
     !didReceiveNewProps &&
     oldState === newState &&
@@ -976,10 +976,10 @@ function resumeMountClassInstance(
     // If an update was already in progress, we should schedule an Update
     // effect even though we're bailing out, so that cWU/cDU are called.
     if (typeof instance.componentDidMount === 'function') {
-      workInProgress.flags |= Update | LayoutStatic;
+      workInProgress[17] |= Update | LayoutStatic;
     }
-    if (__DEV__ && (workInProgress.mode & StrictEffectsMode) !== NoMode) {
-      workInProgress.flags |= MountLayoutDev;
+    if (__DEV__ && (workInProgress[16] & StrictEffectsMode) !== NoMode) {
+      workInProgress[17] |= MountLayoutDev;
     }
     return false;
   }
@@ -991,7 +991,7 @@ function resumeMountClassInstance(
       getDerivedStateFromProps,
       newProps,
     );
-    newState = workInProgress.memoizedState;
+    newState = workInProgress[14];
   }
 
   const shouldUpdate =
@@ -1022,25 +1022,25 @@ function resumeMountClassInstance(
       }
     }
     if (typeof instance.componentDidMount === 'function') {
-      workInProgress.flags |= Update | LayoutStatic;
+      workInProgress[17] |= Update | LayoutStatic;
     }
-    if (__DEV__ && (workInProgress.mode & StrictEffectsMode) !== NoMode) {
-      workInProgress.flags |= MountLayoutDev;
+    if (__DEV__ && (workInProgress[16] & StrictEffectsMode) !== NoMode) {
+      workInProgress[17] |= MountLayoutDev;
     }
   } else {
     // If an update was already in progress, we should schedule an Update
     // effect even though we're bailing out, so that cWU/cDU are called.
     if (typeof instance.componentDidMount === 'function') {
-      workInProgress.flags |= Update | LayoutStatic;
+      workInProgress[17] |= Update | LayoutStatic;
     }
-    if (__DEV__ && (workInProgress.mode & StrictEffectsMode) !== NoMode) {
-      workInProgress.flags |= MountLayoutDev;
+    if (__DEV__ && (workInProgress[16] & StrictEffectsMode) !== NoMode) {
+      workInProgress[17] |= MountLayoutDev;
     }
 
     // If shouldComponentUpdate returned false, we should still update the
     // memoized state to indicate that this work can be reused.
-    workInProgress.memoizedProps = newProps;
-    workInProgress.memoizedState = newState;
+    workInProgress[12] = newProps;
+    workInProgress[14] = newState;
   }
 
   // Update the existing instance's state, props, and context pointers even
@@ -1060,18 +1060,18 @@ function updateClassInstance(
   newProps: any,
   renderLanes: Lanes,
 ): boolean {
-  const instance = workInProgress.stateNode;
+  const instance = workInProgress[4];
 
   cloneUpdateQueue(current, workInProgress);
 
-  const unresolvedOldProps = workInProgress.memoizedProps;
+  const unresolvedOldProps = workInProgress[12];
   const oldProps = resolveClassComponentProps(
     ctor,
     unresolvedOldProps,
-    workInProgress.type === workInProgress.elementType,
+    workInProgress[3] === workInProgress[2],
   );
   instance.props = oldProps;
-  const unresolvedNewProps = workInProgress.pendingProps;
+  const unresolvedNewProps = workInProgress[11];
 
   const oldContext = instance.context;
   const contextType = ctor.contextType;
@@ -1114,11 +1114,11 @@ function updateClassInstance(
 
   resetHasForceUpdateBeforeProcessing();
 
-  const oldState = workInProgress.memoizedState;
+  const oldState = workInProgress[14];
   let newState = (instance.state = oldState);
   processUpdateQueue(workInProgress, newProps, instance, renderLanes);
   suspendIfUpdateReadFromEntangledAsyncAction();
-  newState = workInProgress.memoizedState;
+  newState = workInProgress[14];
 
   if (
     unresolvedOldProps === unresolvedNewProps &&
@@ -1128,26 +1128,26 @@ function updateClassInstance(
     !(
       enableLazyContextPropagation &&
       current !== null &&
-      current.dependencies !== null &&
-      checkIfContextChanged(current.dependencies)
+      current[15] !== null &&
+      checkIfContextChanged(current[15])
     )
   ) {
     // If an update was already in progress, we should schedule an Update
     // effect even though we're bailing out, so that cWU/cDU are called.
     if (typeof instance.componentDidUpdate === 'function') {
       if (
-        unresolvedOldProps !== current.memoizedProps ||
-        oldState !== current.memoizedState
+        unresolvedOldProps !== current[12] ||
+        oldState !== current[14]
       ) {
-        workInProgress.flags |= Update;
+        workInProgress[17] |= Update;
       }
     }
     if (typeof instance.getSnapshotBeforeUpdate === 'function') {
       if (
-        unresolvedOldProps !== current.memoizedProps ||
-        oldState !== current.memoizedState
+        unresolvedOldProps !== current[12] ||
+        oldState !== current[14]
       ) {
-        workInProgress.flags |= Snapshot;
+        workInProgress[17] |= Snapshot;
       }
     }
     return false;
@@ -1160,7 +1160,7 @@ function updateClassInstance(
       getDerivedStateFromProps,
       newProps,
     );
-    newState = workInProgress.memoizedState;
+    newState = workInProgress[14];
   }
 
   const shouldUpdate =
@@ -1180,8 +1180,8 @@ function updateClassInstance(
     // components so it's not that common.
     (enableLazyContextPropagation &&
       current !== null &&
-      current.dependencies !== null &&
-      checkIfContextChanged(current.dependencies));
+      current[15] !== null &&
+      checkIfContextChanged(current[15]));
 
   if (shouldUpdate) {
     // In order to support react-lifecycles-compat polyfilled components,
@@ -1199,35 +1199,35 @@ function updateClassInstance(
       }
     }
     if (typeof instance.componentDidUpdate === 'function') {
-      workInProgress.flags |= Update;
+      workInProgress[17] |= Update;
     }
     if (typeof instance.getSnapshotBeforeUpdate === 'function') {
-      workInProgress.flags |= Snapshot;
+      workInProgress[17] |= Snapshot;
     }
   } else {
     // If an update was already in progress, we should schedule an Update
     // effect even though we're bailing out, so that cWU/cDU are called.
     if (typeof instance.componentDidUpdate === 'function') {
       if (
-        unresolvedOldProps !== current.memoizedProps ||
-        oldState !== current.memoizedState
+        unresolvedOldProps !== current[12] ||
+        oldState !== current[14]
       ) {
-        workInProgress.flags |= Update;
+        workInProgress[17] |= Update;
       }
     }
     if (typeof instance.getSnapshotBeforeUpdate === 'function') {
       if (
-        unresolvedOldProps !== current.memoizedProps ||
-        oldState !== current.memoizedState
+        unresolvedOldProps !== current[12] ||
+        oldState !== current[14]
       ) {
-        workInProgress.flags |= Snapshot;
+        workInProgress[17] |= Snapshot;
       }
     }
 
     // If shouldComponentUpdate returned false, we should still update the
     // memoized props/state to indicate that this work can be reused.
-    workInProgress.memoizedProps = newProps;
-    workInProgress.memoizedState = newState;
+    workInProgress[12] = newProps;
+    workInProgress[14] = newState;
   }
 
   // Update the existing instance's state, props, and context pointers even

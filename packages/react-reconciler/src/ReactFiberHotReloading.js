@@ -142,7 +142,7 @@ export function isCompatibleFamilyForHotReloading(
       return false;
     }
 
-    const prevType = fiber.elementType;
+    const prevType = fiber[2];
     const nextType = element.type;
 
     // If we got here, we know types aren't === equal.
@@ -153,7 +153,7 @@ export function isCompatibleFamilyForHotReloading(
         ? nextType.$$typeof
         : null;
 
-    switch (fiber.tag) {
+    switch (fiber[0]) {
       case ClassComponent: {
         if (typeof nextType === 'function') {
           needsCompareFamilies = true;
@@ -319,7 +319,7 @@ function scheduleFibersWithFamiliesRecursively(
     }
 
     if (needsRemount) {
-      fiber._debugNeedsRemount = true;
+      fiber[30] = true;
     }
     if (needsRemount || needsRender) {
       const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
@@ -434,22 +434,22 @@ function findHostInstancesForFiberShallowly(
     // If we didn't find any host children, fallback to closest host parent.
     let node = fiber;
     while (true) {
-      switch (node.tag) {
+      switch (node[0]) {
         case HostSingleton:
         case HostComponent:
-          hostInstances.add(node.stateNode);
+          hostInstances.add(node[4]);
           return;
         case HostPortal:
-          hostInstances.add(node.stateNode.containerInfo);
+          hostInstances.add(node[4].containerInfo);
           return;
         case HostRoot:
-          hostInstances.add(node.stateNode.containerInfo);
+          hostInstances.add(node[4].containerInfo);
           return;
       }
-      if (node.return === null) {
+      if (node[5] === null) {
         throw new Error('Expected to reach root first.');
       }
-      node = node.return;
+      node = node[5];
     }
   }
 }
@@ -463,30 +463,30 @@ function findChildHostInstancesForFiberShallowly(
     let foundHostInstances = false;
     while (true) {
       if (
-        node.tag === HostComponent ||
-        node.tag === HostHoistable ||
-        (supportsSingletons ? node.tag === HostSingleton : false)
+        node[0] === HostComponent ||
+        node[0] === HostHoistable ||
+        (supportsSingletons ? node[0] === HostSingleton : false)
       ) {
         // We got a match.
         foundHostInstances = true;
-        hostInstances.add(node.stateNode);
+        hostInstances.add(node[4]);
         // There may still be more, so keep searching.
-      } else if (node.child !== null) {
-        node.child.return = node;
-        node = node.child;
+      } else if (node[6] !== null) {
+        node[6][5] = node;
+        node = node[6];
         continue;
       }
       if (node === fiber) {
         return foundHostInstances;
       }
-      while (node.sibling === null) {
-        if (node.return === null || node.return === fiber) {
+      while (node[7] === null) {
+        if (node[5] === null || node[5] === fiber) {
           return foundHostInstances;
         }
-        node = node.return;
+        node = node[5];
       }
-      node.sibling.return = node.return;
-      node = node.sibling;
+      node[7][5] = node[5];
+      node = node[7];
     }
   }
   return false;

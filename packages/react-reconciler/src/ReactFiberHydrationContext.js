@@ -89,7 +89,7 @@ function buildHydrationDiffNode(
   fiber: Fiber,
   distanceFromLeaf: number,
 ): HydrationDiffNode {
-  if (fiber.return === null) {
+  if (fiber[5] === null) {
     // We're at the root.
     if (hydrationDiffRootDEV === null) {
       hydrationDiffRootDEV = {
@@ -109,7 +109,7 @@ function buildHydrationDiffNode(
     return hydrationDiffRootDEV;
   }
   const siblings = buildHydrationDiffNode(
-    fiber.return,
+    fiber[5],
     distanceFromLeaf + 1,
   ).children;
   // The same node may already exist in the parent. Since we currently always render depth first
@@ -155,7 +155,7 @@ function enterHydrationState(fiber: Fiber): boolean {
     return false;
   }
 
-  const parentInstance: Container = fiber.stateNode.containerInfo;
+  const parentInstance: Container = fiber[4].containerInfo;
   nextHydratableInstance =
     getFirstHydratableChildWithinContainer(parentInstance);
   hydrationParentFiber = fiber;
@@ -221,19 +221,19 @@ function tryHydrateInstance(
   // fiber is a HostComponent Fiber
   const instance = canHydrateInstance(
     nextInstance,
-    fiber.type,
-    fiber.pendingProps,
+    fiber[3],
+    fiber[11],
     rootOrSingletonContext,
   );
   if (instance !== null) {
-    fiber.stateNode = (instance: Instance);
+    fiber[4] = (instance: Instance);
 
     if (__DEV__) {
       if (!didSuspendOrErrorDEV) {
         const differences = diffHydratedPropsForDevWarnings(
           instance,
-          fiber.type,
-          fiber.pendingProps,
+          fiber[3],
+          fiber[11],
           hostContext,
         );
         if (differences !== null) {
@@ -253,14 +253,14 @@ function tryHydrateInstance(
 
 function tryHydrateText(fiber: Fiber, nextInstance: any) {
   // fiber is a HostText Fiber
-  const text = fiber.pendingProps;
+  const text = fiber[11];
   const textInstance = canHydrateTextInstance(
     nextInstance,
     text,
     rootOrSingletonContext,
   );
   if (textInstance !== null) {
-    fiber.stateNode = (textInstance: TextInstance);
+    fiber[4] = (textInstance: TextInstance);
     hydrationParentFiber = fiber;
     // Text Instances don't have children so there's nothing to hydrate.
     nextHydratableInstance = null;
@@ -281,15 +281,15 @@ function tryHydrateSuspense(fiber: Fiber, nextInstance: any) {
       treeContext: getSuspendedTreeContext(),
       retryLane: OffscreenLane,
     };
-    fiber.memoizedState = suspenseState;
+    fiber[14] = suspenseState;
     // Store the dehydrated fragment as a child fiber.
     // This simplifies the code for getHostSibling and deleting nodes,
     // since it doesn't have to consider all Suspense boundaries and
     // check if they're dehydrated ones or not.
     const dehydratedFragment =
       createFiberFromDehydratedFragment(suspenseInstance);
-    dehydratedFragment.return = fiber;
-    fiber.child = dehydratedFragment;
+    dehydratedFragment[5] = fiber;
+    fiber[6] = dehydratedFragment;
     hydrationParentFiber = fiber;
     // While a Suspense Instance does have children, we won't step into
     // it during the first pass. Instead, we'll reenter it later.
@@ -340,9 +340,9 @@ function claimHydratableSingleton(fiber: Fiber): void {
     }
     const currentRootContainer = getRootHostContainer();
     const currentHostContext = getHostContext();
-    const instance = (fiber.stateNode = resolveSingletonInstance(
-      fiber.type,
-      fiber.pendingProps,
+    const instance = (fiber[4] = resolveSingletonInstance(
+      fiber[3],
+      fiber[11],
       currentRootContainer,
       currentHostContext,
       false,
@@ -352,8 +352,8 @@ function claimHydratableSingleton(fiber: Fiber): void {
       if (!didSuspendOrErrorDEV) {
         const differences = diffHydratedPropsForDevWarnings(
           instance,
-          fiber.type,
-          fiber.pendingProps,
+          fiber[3],
+          fiber[11],
           currentHostContext,
         );
         if (differences !== null) {
@@ -377,8 +377,8 @@ function tryToClaimNextHydratableInstance(fiber: Fiber): void {
   // Validate that this is ok to render here before any mismatches.
   const currentHostContext = getHostContext();
   const shouldKeepWarning = validateHydratableInstance(
-    fiber.type,
-    fiber.pendingProps,
+    fiber[3],
+    fiber[11],
     currentHostContext,
   );
 
@@ -398,7 +398,7 @@ function tryToClaimNextHydratableTextInstance(fiber: Fiber): void {
   if (!isHydrating) {
     return;
   }
-  const text = fiber.pendingProps;
+  const text = fiber[11];
 
   let shouldKeepWarning = true;
   // Validate that this is ok to render here before any mismatches.
@@ -464,11 +464,11 @@ function prepareToHydrateHostInstance(
     );
   }
 
-  const instance: Instance = fiber.stateNode;
+  const instance: Instance = fiber[4];
   const didHydrate = hydrateInstance(
     instance,
-    fiber.type,
-    fiber.memoizedProps,
+    fiber[3],
+    fiber[12],
     hostContext,
     fiber,
   );
@@ -485,15 +485,15 @@ function prepareToHydrateHostTextInstance(fiber: Fiber): void {
     );
   }
 
-  const textInstance: TextInstance = fiber.stateNode;
-  const textContent: string = fiber.memoizedProps;
+  const textInstance: TextInstance = fiber[4];
+  const textContent: string = fiber[12];
   const shouldWarnIfMismatchDev = !didSuspendOrErrorDEV;
   let parentProps = null;
   // We assume that prepareToHydrateHostTextInstance is called in a context where the
   // hydration parent is the parent host component of this host text.
   const returnFiber = hydrationParentFiber;
   if (returnFiber !== null) {
-    switch (returnFiber.tag) {
+    switch (returnFiber[0]) {
       case HostRoot: {
         if (__DEV__) {
           if (shouldWarnIfMismatchDev) {
@@ -512,7 +512,7 @@ function prepareToHydrateHostTextInstance(fiber: Fiber): void {
       }
       case HostSingleton:
       case HostComponent: {
-        parentProps = returnFiber.memoizedProps;
+        parentProps = returnFiber[12];
         if (__DEV__) {
           if (shouldWarnIfMismatchDev) {
             const difference = diffHydratedTextForDevWarnings(
@@ -551,7 +551,7 @@ function prepareToHydrateHostSuspenseInstance(fiber: Fiber): void {
     );
   }
 
-  const suspenseState: null | SuspenseState = fiber.memoizedState;
+  const suspenseState: null | SuspenseState = fiber[14];
   const suspenseInstance: null | SuspenseInstance =
     suspenseState !== null ? suspenseState.dehydrated : null;
 
@@ -574,7 +574,7 @@ function skipPastDehydratedSuspenseInstance(
         'This error is likely caused by a bug in React. Please file an issue.',
     );
   }
-  const suspenseState: null | SuspenseState = fiber.memoizedState;
+  const suspenseState: null | SuspenseState = fiber[14];
   const suspenseInstance: null | SuspenseInstance =
     suspenseState !== null ? suspenseState.dehydrated : null;
 
@@ -589,9 +589,9 @@ function skipPastDehydratedSuspenseInstance(
 }
 
 function popToNextHostParent(fiber: Fiber): void {
-  hydrationParentFiber = fiber.return;
+  hydrationParentFiber = fiber[5];
   while (hydrationParentFiber) {
-    switch (hydrationParentFiber.tag) {
+    switch (hydrationParentFiber[0]) {
       case HostRoot:
       case HostSingleton:
         rootOrSingletonContext = true;
@@ -601,7 +601,7 @@ function popToNextHostParent(fiber: Fiber): void {
         rootOrSingletonContext = false;
         return;
       default:
-        hydrationParentFiber = hydrationParentFiber.return;
+        hydrationParentFiber = hydrationParentFiber[5];
     }
   }
 }
@@ -629,12 +629,12 @@ function popHydrationState(fiber: Fiber): boolean {
     // With float we never clear the Root, or Singleton instances. We also do not clear Instances
     // that have singleton text content
     if (
-      fiber.tag !== HostRoot &&
-      fiber.tag !== HostSingleton &&
+      fiber[0] !== HostRoot &&
+      fiber[0] !== HostSingleton &&
       !(
-        fiber.tag === HostComponent &&
-        (!shouldDeleteUnhydratedTailInstances(fiber.type) ||
-          shouldSetTextContent(fiber.type, fiber.memoizedProps))
+        fiber[0] === HostComponent &&
+        (!shouldDeleteUnhydratedTailInstances(fiber[3]) ||
+          shouldSetTextContent(fiber[3], fiber[12]))
       )
     ) {
       shouldClear = true;
@@ -645,10 +645,10 @@ function popHydrationState(fiber: Fiber): boolean {
     // other nodes in them. We also ignore components with pure text content in
     // side of them. We also don't delete anything inside the root container.
     if (
-      fiber.tag !== HostRoot &&
-      (fiber.tag !== HostComponent ||
-        (shouldDeleteUnhydratedTailInstances(fiber.type) &&
-          !shouldSetTextContent(fiber.type, fiber.memoizedProps)))
+      fiber[0] !== HostRoot &&
+      (fiber[0] !== HostComponent ||
+        (shouldDeleteUnhydratedTailInstances(fiber[3]) &&
+          !shouldSetTextContent(fiber[3], fiber[12])))
     ) {
       shouldClear = true;
     }
@@ -661,11 +661,11 @@ function popHydrationState(fiber: Fiber): boolean {
     }
   }
   popToNextHostParent(fiber);
-  if (fiber.tag === SuspenseComponent) {
+  if (fiber[0] === SuspenseComponent) {
     nextHydratableInstance = skipPastDehydratedSuspenseInstance(fiber);
   } else {
     nextHydratableInstance = hydrationParentFiber
-      ? getNextHydratableSibling(fiber.stateNode)
+      ? getNextHydratableSibling(fiber[4])
       : null;
   }
   return true;

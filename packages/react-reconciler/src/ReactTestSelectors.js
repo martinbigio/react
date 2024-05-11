@@ -143,10 +143,10 @@ function findFiberRootForHostRoot(hostRoot: Instance): Fiber {
 }
 
 function matchSelector(fiber: Fiber, selector: Selector): boolean {
-  const tag = fiber.tag;
+  const tag = fiber[0];
   switch (selector.$$typeof) {
     case COMPONENT_TYPE:
-      if (fiber.type === selector.value) {
+      if (fiber[3] === selector.value) {
         return true;
       }
       break;
@@ -161,7 +161,7 @@ function matchSelector(fiber: Fiber, selector: Selector): boolean {
         tag === HostHoistable ||
         tag === HostSingleton
       ) {
-        const node = fiber.stateNode;
+        const node = fiber[4];
         if (
           matchAccessibilityRole(node, ((selector: any): RoleSelector).value)
         ) {
@@ -191,7 +191,7 @@ function matchSelector(fiber: Fiber, selector: Selector): boolean {
         tag === HostHoistable ||
         tag === HostSingleton
       ) {
-        const dataTestID = fiber.memoizedProps['data-testname'];
+        const dataTestID = fiber[12]['data-testname'];
         if (
           typeof dataTestID === 'string' &&
           dataTestID.toLowerCase() ===
@@ -233,7 +233,7 @@ function findPaths(root: Fiber, selectors: Array<Selector>): Array<Fiber> {
   let index = 0;
   while (index < stack.length) {
     const fiber = ((stack[index++]: any): Fiber);
-    const tag = fiber.tag;
+    const tag = fiber[0];
     let selectorIndex = ((stack[index++]: any): number);
     let selector = selectors[selectorIndex];
 
@@ -254,10 +254,10 @@ function findPaths(root: Fiber, selectors: Array<Selector>): Array<Fiber> {
     if (selectorIndex === selectors.length) {
       matchingFibers.push(fiber);
     } else {
-      let child = fiber.child;
+      let child = fiber[6];
       while (child !== null) {
         stack.push(child, selectorIndex);
-        child = child.sibling;
+        child = child[7];
       }
     }
   }
@@ -271,7 +271,7 @@ function hasMatchingPaths(root: Fiber, selectors: Array<Selector>): boolean {
   let index = 0;
   while (index < stack.length) {
     const fiber = ((stack[index++]: any): Fiber);
-    const tag = fiber.tag;
+    const tag = fiber[0];
     let selectorIndex = ((stack[index++]: any): number);
     let selector = selectors[selectorIndex];
 
@@ -292,10 +292,10 @@ function hasMatchingPaths(root: Fiber, selectors: Array<Selector>): boolean {
     if (selectorIndex === selectors.length) {
       return true;
     } else {
-      let child = fiber.child;
+      let child = fiber[6];
       while (child !== null) {
         stack.push(child, selectorIndex);
-        child = child.sibling;
+        child = child[7];
       }
     }
   }
@@ -320,7 +320,7 @@ export function findAllNodes(
   let index = 0;
   while (index < stack.length) {
     const node = ((stack[index++]: any): Fiber);
-    const tag = node.tag;
+    const tag = node[0];
     if (
       tag === HostComponent ||
       tag === HostHoistable ||
@@ -329,12 +329,12 @@ export function findAllNodes(
       if (isHiddenSubtree(node)) {
         continue;
       }
-      instanceRoots.push(node.stateNode);
+      instanceRoots.push(node[4]);
     } else {
-      let child = node.child;
+      let child = node[6];
       while (child !== null) {
         stack.push(child);
-        child = child.sibling;
+        child = child[7];
       }
     }
   }
@@ -360,7 +360,7 @@ export function getFindAllNodesFailureDescription(
   let index = 0;
   while (index < stack.length) {
     const fiber = ((stack[index++]: any): Fiber);
-    const tag = fiber.tag;
+    const tag = fiber[0];
     let selectorIndex = ((stack[index++]: any): number);
     const selector = selectors[selectorIndex];
 
@@ -381,10 +381,10 @@ export function getFindAllNodesFailureDescription(
     }
 
     if (selectorIndex < selectors.length) {
-      let child = fiber.child;
+      let child = fiber[6];
       while (child !== null) {
         stack.push(child, selectorIndex);
-        child = child.sibling;
+        child = child[7];
       }
     }
   }
@@ -518,7 +518,7 @@ export function focusWithin(
   let index = 0;
   while (index < stack.length) {
     const fiber = ((stack[index++]: any): Fiber);
-    const tag = fiber.tag;
+    const tag = fiber[0];
     if (isHiddenSubtree(fiber)) {
       continue;
     }
@@ -527,15 +527,15 @@ export function focusWithin(
       tag === HostHoistable ||
       tag === HostSingleton
     ) {
-      const node = fiber.stateNode;
+      const node = fiber[4];
       if (setFocusIfFocusable(node)) {
         return true;
       }
     }
-    let child = fiber.child;
+    let child = fiber[6];
     while (child !== null) {
       stack.push(child);
-      child = child.sibling;
+      child = child[7];
     }
   }
 

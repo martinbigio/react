@@ -34,7 +34,7 @@ if (__DEV__) {
 // $FlowFixMe[missing-local-annot]
 function createHierarchy(fiberHierarchy) {
   return fiberHierarchy.map(fiber => ({
-    name: getComponentNameFromType(fiber.type),
+    name: getComponentNameFromType(fiber[3]),
     getInspectorData: findNodeHandle => {
       return {
         props: getHostProps(fiber),
@@ -43,8 +43,8 @@ function createHierarchy(fiberHierarchy) {
           const hostFiber = findCurrentHostFiber(fiber);
           const node =
             hostFiber != null &&
-            hostFiber.stateNode !== null &&
-            hostFiber.stateNode.node;
+            hostFiber[4] !== null &&
+            hostFiber[4].node;
 
           if (node) {
             nativeFabricUIManager.measure(node, callback);
@@ -67,13 +67,13 @@ function getHostNode(fiber: Fiber | null, findNodeHandle) {
     // look for children first for the hostNode
     // as composite fibers do not have a hostNode
     while (fiber) {
-      if (fiber.stateNode !== null && fiber.tag === HostComponent) {
-        hostNode = findNodeHandle(fiber.stateNode);
+      if (fiber[4] !== null && fiber[0] === HostComponent) {
+        hostNode = findNodeHandle(fiber[4]);
       }
       if (hostNode) {
         return hostNode;
       }
-      fiber = fiber.child;
+      fiber = fiber[6];
     }
     return null;
   }
@@ -83,7 +83,7 @@ function getHostNode(fiber: Fiber | null, findNodeHandle) {
 function getHostProps(fiber) {
   const host = findCurrentHostFiber(fiber);
   if (host) {
-    return host.memoizedProps || emptyObject;
+    return host[12] || emptyObject;
   }
   return emptyObject;
 }
@@ -144,7 +144,7 @@ function lastNonHostInstance(hierarchy) {
   for (let i = hierarchy.length - 1; i > 1; i--) {
     const instance = hierarchy[i];
 
-    if (instance.tag !== HostComponent) {
+    if (instance[0] !== HostComponent) {
       return instance;
     }
   }
@@ -157,8 +157,8 @@ function traverseOwnerTreeUp(
 ): void {
   if (__DEV__ || enableGetInspectorDataForInstanceInProduction) {
     hierarchy.unshift(instance);
-    const owner = instance._debugOwner;
-    if (owner != null && typeof owner.tag === 'number') {
+    const owner = instance[28];
+    if (owner != null && typeof owner[0] === 'number') {
       traverseOwnerTreeUp(hierarchy, (owner: any));
     } else {
       // TODO: Traverse Server Components owners.

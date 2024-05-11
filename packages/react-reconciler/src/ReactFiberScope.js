@@ -28,7 +28,7 @@ import {
 } from 'shared/ReactFeatureFlags';
 
 function getSuspenseFallbackChild(fiber: Fiber): Fiber | null {
-  return ((((fiber.child: any): Fiber).sibling: any): Fiber).child;
+  return ((((fiber[6]: any): Fiber)[7]: any): Fiber)[6];
 }
 
 const emptyObject = {};
@@ -39,7 +39,7 @@ function collectScopedNodes(
   scopedNodes: Array<any>,
 ): void {
   if (enableScopeAPI) {
-    if (node.tag === HostComponent) {
+    if (node[0] === HostComponent) {
       const {type, memoizedProps, stateNode} = node;
       const instance = getPublicInstance(stateNode);
       if (
@@ -49,7 +49,7 @@ function collectScopedNodes(
         scopedNodes.push(instance);
       }
     }
-    let child = node.child;
+    let child = node[6];
 
     if (isFiberSuspenseAndTimedOut(node)) {
       child = getSuspenseFallbackChild(node);
@@ -65,14 +65,14 @@ function collectFirstScopedNode(
   fn: ReactScopeQuery,
 ): null | Object {
   if (enableScopeAPI) {
-    if (node.tag === HostComponent) {
+    if (node[0] === HostComponent) {
       const {type, memoizedProps, stateNode} = node;
       const instance = getPublicInstance(stateNode);
       if (instance !== null && fn(type, memoizedProps, instance) === true) {
         return instance;
       }
     }
-    let child = node.child;
+    let child = node[6];
 
     if (isFiberSuspenseAndTimedOut(node)) {
       child = getSuspenseFallbackChild(node);
@@ -92,7 +92,7 @@ function collectScopedNodesFromChildren(
   let child: null | Fiber = startingChild;
   while (child !== null) {
     collectScopedNodes(child, fn, scopedNodes);
-    child = child.sibling;
+    child = child[7];
   }
 }
 
@@ -106,7 +106,7 @@ function collectFirstScopedNodeFromChildren(
     if (scopedNode !== null) {
       return scopedNode;
     }
-    child = child.sibling;
+    child = child[7];
   }
   return null;
 }
@@ -117,13 +117,13 @@ function collectNearestContextValues<T>(
   childContextValues: Array<T>,
 ): void {
   if (
-    node.tag === ContextProvider &&
-    (enableRenderableContext ? node.type : node.type._context) === context
+    node[0] === ContextProvider &&
+    (enableRenderableContext ? node[3] : node[3]._context) === context
   ) {
-    const contextValue = node.memoizedProps.value;
+    const contextValue = node[12].value;
     childContextValues.push(contextValue);
   } else {
-    let child = node.child;
+    let child = node[6];
 
     if (isFiberSuspenseAndTimedOut(node)) {
       child = getSuspenseFallbackChild(node);
@@ -142,7 +142,7 @@ function collectNearestChildContextValues<T>(
   let child = startingChild;
   while (child !== null) {
     collectNearestContextValues(child, context, childContextValues);
-    child = child.sibling;
+    child = child[7];
   }
 }
 
@@ -180,10 +180,10 @@ function DO_NOT_USE_queryFirstNode(
 function containsNode(this: $FlowFixMe, node: Object): boolean {
   let fiber = getInstanceFromNode(node);
   while (fiber !== null) {
-    if (fiber.tag === ScopeComponent && fiber.stateNode === this) {
+    if (fiber[0] === ScopeComponent && fiber[4] === this) {
       return true;
     }
-    fiber = fiber.return;
+    fiber = fiber[5];
   }
   return false;
 }

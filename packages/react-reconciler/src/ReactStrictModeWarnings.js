@@ -33,10 +33,10 @@ if (__DEV__) {
 
     let node: null | Fiber = fiber;
     while (node !== null) {
-      if (node.mode & StrictLegacyMode) {
+      if (node[16] & StrictLegacyMode) {
         maybeStrictRoot = node;
       }
-      node = node.return;
+      node = node[5];
     }
 
     return maybeStrictRoot;
@@ -65,7 +65,7 @@ if (__DEV__) {
     instance: any,
   ) => {
     // Dedupe strategy: Warn once per component.
-    if (didWarnAboutUnsafeLifecycles.has(fiber.type)) {
+    if (didWarnAboutUnsafeLifecycles.has(fiber[3])) {
       return;
     }
 
@@ -78,7 +78,7 @@ if (__DEV__) {
     }
 
     if (
-      fiber.mode & StrictLegacyMode &&
+      fiber[16] & StrictLegacyMode &&
       typeof instance.UNSAFE_componentWillMount === 'function'
     ) {
       pendingUNSAFE_ComponentWillMountWarnings.push(fiber);
@@ -92,7 +92,7 @@ if (__DEV__) {
     }
 
     if (
-      fiber.mode & StrictLegacyMode &&
+      fiber[16] & StrictLegacyMode &&
       typeof instance.UNSAFE_componentWillReceiveProps === 'function'
     ) {
       pendingUNSAFE_ComponentWillReceivePropsWarnings.push(fiber);
@@ -106,7 +106,7 @@ if (__DEV__) {
     }
 
     if (
-      fiber.mode & StrictLegacyMode &&
+      fiber[16] & StrictLegacyMode &&
       typeof instance.UNSAFE_componentWillUpdate === 'function'
     ) {
       pendingUNSAFE_ComponentWillUpdateWarnings.push(fiber);
@@ -121,7 +121,7 @@ if (__DEV__) {
         componentWillMountUniqueNames.add(
           getComponentNameFromFiber(fiber) || 'Component',
         );
-        didWarnAboutUnsafeLifecycles.add(fiber.type);
+        didWarnAboutUnsafeLifecycles.add(fiber[3]);
       });
       pendingComponentWillMountWarnings = [];
     }
@@ -132,7 +132,7 @@ if (__DEV__) {
         UNSAFE_componentWillMountUniqueNames.add(
           getComponentNameFromFiber(fiber) || 'Component',
         );
-        didWarnAboutUnsafeLifecycles.add(fiber.type);
+        didWarnAboutUnsafeLifecycles.add(fiber[3]);
       });
       pendingUNSAFE_ComponentWillMountWarnings = [];
     }
@@ -143,7 +143,7 @@ if (__DEV__) {
         componentWillReceivePropsUniqueNames.add(
           getComponentNameFromFiber(fiber) || 'Component',
         );
-        didWarnAboutUnsafeLifecycles.add(fiber.type);
+        didWarnAboutUnsafeLifecycles.add(fiber[3]);
       });
 
       pendingComponentWillReceivePropsWarnings = [];
@@ -155,7 +155,7 @@ if (__DEV__) {
         UNSAFE_componentWillReceivePropsUniqueNames.add(
           getComponentNameFromFiber(fiber) || 'Component',
         );
-        didWarnAboutUnsafeLifecycles.add(fiber.type);
+        didWarnAboutUnsafeLifecycles.add(fiber[3]);
       });
 
       pendingUNSAFE_ComponentWillReceivePropsWarnings = [];
@@ -167,7 +167,7 @@ if (__DEV__) {
         componentWillUpdateUniqueNames.add(
           getComponentNameFromFiber(fiber) || 'Component',
         );
-        didWarnAboutUnsafeLifecycles.add(fiber.type);
+        didWarnAboutUnsafeLifecycles.add(fiber[3]);
       });
 
       pendingComponentWillUpdateWarnings = [];
@@ -179,7 +179,7 @@ if (__DEV__) {
         UNSAFE_componentWillUpdateUniqueNames.add(
           getComponentNameFromFiber(fiber) || 'Component',
         );
-        didWarnAboutUnsafeLifecycles.add(fiber.type);
+        didWarnAboutUnsafeLifecycles.add(fiber[3]);
       });
 
       pendingUNSAFE_ComponentWillUpdateWarnings = [];
@@ -304,15 +304,15 @@ if (__DEV__) {
     }
 
     // Dedup strategy: Warn once per component.
-    if (didWarnAboutLegacyContext.has(fiber.type)) {
+    if (didWarnAboutLegacyContext.has(fiber[3])) {
       return;
     }
 
     let warningsForRoot = pendingLegacyContextWarning.get(strictRoot);
 
     if (
-      fiber.type.contextTypes != null ||
-      fiber.type.childContextTypes != null ||
+      fiber[3].contextTypes != null ||
+      fiber[3].childContextTypes != null ||
       (instance !== null && typeof instance.getChildContext === 'function')
     ) {
       if (warningsForRoot === undefined) {
@@ -334,7 +334,7 @@ if (__DEV__) {
         const uniqueNames = new Set<string>();
         fiberArray.forEach(fiber => {
           uniqueNames.add(getComponentNameFromFiber(fiber) || 'Component');
-          didWarnAboutLegacyContext.add(fiber.type);
+          didWarnAboutLegacyContext.add(fiber[3]);
         });
 
         const sortedNames = setToSortedString(uniqueNames);

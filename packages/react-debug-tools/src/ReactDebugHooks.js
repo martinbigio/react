@@ -541,7 +541,7 @@ function useMemoCache(size: number): Array<any> {
   }
 
   // $FlowFixMe[incompatible-use]: updateQueue is mixed
-  const memoCache = fiber.updateQueue?.memoCache;
+  const memoCache = fiber[13]?.memoCache;
   if (memoCache == null) {
     return [];
   }
@@ -1171,8 +1171,8 @@ export function inspectHooks<Props>(
 function setupContexts(contextMap: Map<ReactContext<any>, any>, fiber: Fiber) {
   let current: null | Fiber = fiber;
   while (current) {
-    if (current.tag === ContextProvider) {
-      let context: ReactContext<any> = current.type;
+    if (current[0] === ContextProvider) {
+      let context: ReactContext<any> = current[3];
       if ((context: any)._context !== undefined) {
         // Support inspection of pre-19+ providers.
         context = (context: any)._context;
@@ -1181,10 +1181,10 @@ function setupContexts(contextMap: Map<ReactContext<any>, any>, fiber: Fiber) {
         // Store the current value that we're going to restore later.
         contextMap.set(context, context._currentValue);
         // Set the inner most provider value on the context.
-        context._currentValue = current.memoizedProps.value;
+        context._currentValue = current[12].value;
       }
     }
-    current = current.return;
+    current = current[5];
   }
 }
 
@@ -1242,9 +1242,9 @@ export function inspectHooksOfFiber(
   }
 
   if (
-    fiber.tag !== FunctionComponent &&
-    fiber.tag !== SimpleMemoComponent &&
-    fiber.tag !== ForwardRef
+    fiber[0] !== FunctionComponent &&
+    fiber[0] !== SimpleMemoComponent &&
+    fiber[0] !== ForwardRef
   ) {
     throw new Error(
       'Unknown Fiber. Needs to be a function component to inspect hooks.',
@@ -1256,12 +1256,12 @@ export function inspectHooksOfFiber(
 
   // Set up the current hook so that we can step through and read the
   // current state from them.
-  currentHook = (fiber.memoizedState: Hook);
+  currentHook = (fiber[14]: Hook);
   currentFiber = fiber;
 
   if (hasOwnProperty.call(currentFiber, 'dependencies')) {
     // $FlowFixMe[incompatible-use]: Flow thinks hasOwnProperty might have nulled `currentFiber`
-    const dependencies = currentFiber.dependencies;
+    const dependencies = currentFiber[15];
     currentContextDependency =
       dependencies !== null ? dependencies.firstContext : null;
   } else if (hasOwnProperty.call(currentFiber, 'dependencies_old')) {
@@ -1282,9 +1282,9 @@ export function inspectHooksOfFiber(
     );
   }
 
-  const type = fiber.type;
-  let props = fiber.memoizedProps;
-  if (type !== fiber.elementType) {
+  const type = fiber[3];
+  let props = fiber[12];
+  if (type !== fiber[2]) {
     props = resolveDefaultProps(type, props);
   }
 
@@ -1298,11 +1298,11 @@ export function inspectHooksOfFiber(
       setupContexts(contextMap, fiber);
     }
 
-    if (fiber.tag === ForwardRef) {
+    if (fiber[0] === ForwardRef) {
       return inspectHooksOfForwardRef(
         type.render,
         props,
-        fiber.ref,
+        fiber[9],
         currentDispatcher,
       );
     }

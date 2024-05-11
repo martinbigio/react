@@ -21,7 +21,7 @@ export function getCurrentFiberOwnerNameInDevOrNull(): string | null {
     if (current === null) {
       return null;
     }
-    const owner = current._debugOwner;
+    const owner = current[28];
     if (owner != null) {
       return getComponentNameFromOwner(owner);
     }

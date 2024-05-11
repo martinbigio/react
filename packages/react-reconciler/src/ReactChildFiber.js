@@ -109,7 +109,7 @@ if (__DEV__) {
     if (child === null || typeof child !== 'object') {
       return;
     }
-    if (!child._store || child._store.validated || child.key != null) {
+    if (!child._store || child._store.validated || child[1] != null) {
       return;
     }
 
@@ -167,7 +167,7 @@ function coerceRef(
 
   // TODO: If enableRefAsProp is on, we shouldn't use the `ref` field. We
   // should always read the ref from the prop.
-  workInProgress.ref = ref;
+  workInProgress[9] = ref;
 }
 
 function throwOnInvalidObjectType(returnFiber: Fiber, newChild: Object) {
@@ -206,7 +206,7 @@ function warnOnFunctionType(returnFiber: Fiber, invalidChild: Function) {
 
     const name = invalidChild.displayName || invalidChild.name || 'Component';
 
-    if (returnFiber.tag === HostRoot) {
+    if (returnFiber[0] === HostRoot) {
       console.error(
         'Functions are not valid as a React child. This may happen if ' +
           'you return %s instead of <%s /> from render. ' +
@@ -244,7 +244,7 @@ function warnOnSymbolType(returnFiber: Fiber, invalidChild: symbol) {
     // eslint-disable-next-line react-internal/safe-string-coercion
     const name = String(invalidChild);
 
-    if (returnFiber.tag === HostRoot) {
+    if (returnFiber[0] === HostRoot) {
       console.error(
         'Symbols are not valid as a React child.\n' + '  root.render(%s)',
         name,
@@ -285,10 +285,10 @@ function createChildReconciler(
       // Noop.
       return;
     }
-    const deletions = returnFiber.deletions;
+    const deletions = returnFiber[19];
     if (deletions === null) {
-      returnFiber.deletions = [childToDelete];
-      returnFiber.flags |= ChildDeletion;
+      returnFiber[19] = [childToDelete];
+      returnFiber[17] |= ChildDeletion;
     } else {
       deletions.push(childToDelete);
     }
@@ -308,7 +308,7 @@ function createChildReconciler(
     let childToDelete = currentFirstChild;
     while (childToDelete !== null) {
       deleteChild(returnFiber, childToDelete);
-      childToDelete = childToDelete.sibling;
+      childToDelete = childToDelete[7];
     }
     return null;
   }
@@ -323,12 +323,12 @@ function createChildReconciler(
 
     let existingChild: null | Fiber = currentFirstChild;
     while (existingChild !== null) {
-      if (existingChild.key !== null) {
-        existingChildren.set(existingChild.key, existingChild);
+      if (existingChild[1] !== null) {
+        existingChildren.set(existingChild[1], existingChild);
       } else {
-        existingChildren.set(existingChild.index, existingChild);
+        existingChildren.set(existingChild[8], existingChild);
       }
-      existingChild = existingChild.sibling;
+      existingChild = existingChild[7];
     }
     return existingChildren;
   }
@@ -337,8 +337,8 @@ function createChildReconciler(
     // We currently set sibling to null and index to 0 here because it is easy
     // to forget to do before returning it. E.g. for the single child case.
     const clone = createWorkInProgress(fiber, pendingProps);
-    clone.index = 0;
-    clone.sibling = null;
+    clone[8] = 0;
+    clone[7] = null;
     return clone;
   }
 
@@ -347,19 +347,19 @@ function createChildReconciler(
     lastPlacedIndex: number,
     newIndex: number,
   ): number {
-    newFiber.index = newIndex;
+    newFiber[8] = newIndex;
     if (!shouldTrackSideEffects) {
       // During hydration, the useId algorithm needs to know which fibers are
       // part of a list of children (arrays, iterators).
-      newFiber.flags |= Forked;
+      newFiber[17] |= Forked;
       return lastPlacedIndex;
     }
-    const current = newFiber.alternate;
+    const current = newFiber[22];
     if (current !== null) {
-      const oldIndex = current.index;
+      const oldIndex = current[8];
       if (oldIndex < lastPlacedIndex) {
         // This is a move.
-        newFiber.flags |= Placement | PlacementDEV;
+        newFiber[17] |= Placement | PlacementDEV;
         return lastPlacedIndex;
       } else {
         // This item can stay in place.
@@ -367,7 +367,7 @@ function createChildReconciler(
       }
     } else {
       // This is an insertion.
-      newFiber.flags |= Placement | PlacementDEV;
+      newFiber[17] |= Placement | PlacementDEV;
       return lastPlacedIndex;
     }
   }
@@ -375,8 +375,8 @@ function createChildReconciler(
   function placeSingleChild(newFiber: Fiber): Fiber {
     // This is simpler for the single child case. We only need to do a
     // placement for inserting new children.
-    if (shouldTrackSideEffects && newFiber.alternate === null) {
-      newFiber.flags |= Placement | PlacementDEV;
+    if (shouldTrackSideEffects && newFiber[22] === null) {
+      newFiber[17] |= Placement | PlacementDEV;
     }
     return newFiber;
   }
@@ -388,20 +388,20 @@ function createChildReconciler(
     lanes: Lanes,
     debugInfo: ReactDebugInfo | null,
   ) {
-    if (current === null || current.tag !== HostText) {
+    if (current === null || current[0] !== HostText) {
       // Insert
-      const created = createFiberFromText(textContent, returnFiber.mode, lanes);
-      created.return = returnFiber;
+      const created = createFiberFromText(textContent, returnFiber[16], lanes);
+      created[5] = returnFiber;
       if (__DEV__) {
-        created._debugInfo = debugInfo;
+        created[27] = debugInfo;
       }
       return created;
     } else {
       // Update
       const existing = useFiber(current, textContent);
-      existing.return = returnFiber;
+      existing[5] = returnFiber;
       if (__DEV__) {
-        existing._debugInfo = debugInfo;
+        existing[27] = debugInfo;
       }
       return existing;
     }
@@ -427,7 +427,7 @@ function createChildReconciler(
     }
     if (current !== null) {
       if (
-        current.elementType === elementType ||
+        current[2] === elementType ||
         // Keep this check inline so it only runs on the false path:
         (__DEV__
           ? isCompatibleFamilyForHotReloading(current, element)
@@ -439,25 +439,25 @@ function createChildReconciler(
         (typeof elementType === 'object' &&
           elementType !== null &&
           elementType.$$typeof === REACT_LAZY_TYPE &&
-          resolveLazy(elementType) === current.type)
+          resolveLazy(elementType) === current[3])
       ) {
         // Move based on index
         const existing = useFiber(current, element.props);
         coerceRef(returnFiber, current, existing, element);
-        existing.return = returnFiber;
+        existing[5] = returnFiber;
         if (__DEV__) {
-          existing._debugOwner = element._owner;
-          existing._debugInfo = debugInfo;
+          existing[28] = element._owner;
+          existing[27] = debugInfo;
         }
         return existing;
       }
     }
     // Insert
-    const created = createFiberFromElement(element, returnFiber.mode, lanes);
+    const created = createFiberFromElement(element, returnFiber[16], lanes);
     coerceRef(returnFiber, current, created, element);
-    created.return = returnFiber;
+    created[5] = returnFiber;
     if (__DEV__) {
-      created._debugInfo = debugInfo;
+      created[27] = debugInfo;
     }
     return created;
   }
@@ -471,23 +471,23 @@ function createChildReconciler(
   ): Fiber {
     if (
       current === null ||
-      current.tag !== HostPortal ||
-      current.stateNode.containerInfo !== portal.containerInfo ||
-      current.stateNode.implementation !== portal.implementation
+      current[0] !== HostPortal ||
+      current[4].containerInfo !== portal.containerInfo ||
+      current[4].implementation !== portal.implementation
     ) {
       // Insert
-      const created = createFiberFromPortal(portal, returnFiber.mode, lanes);
-      created.return = returnFiber;
+      const created = createFiberFromPortal(portal, returnFiber[16], lanes);
+      created[5] = returnFiber;
       if (__DEV__) {
-        created._debugInfo = debugInfo;
+        created[27] = debugInfo;
       }
       return created;
     } else {
       // Update
       const existing = useFiber(current, portal.children || []);
-      existing.return = returnFiber;
+      existing[5] = returnFiber;
       if (__DEV__) {
-        existing._debugInfo = debugInfo;
+        existing[27] = debugInfo;
       }
       return existing;
     }
@@ -501,25 +501,25 @@ function createChildReconciler(
     key: null | string,
     debugInfo: null | ReactDebugInfo,
   ): Fiber {
-    if (current === null || current.tag !== Fragment) {
+    if (current === null || current[0] !== Fragment) {
       // Insert
       const created = createFiberFromFragment(
         fragment,
-        returnFiber.mode,
+        returnFiber[16],
         lanes,
         key,
       );
-      created.return = returnFiber;
+      created[5] = returnFiber;
       if (__DEV__) {
-        created._debugInfo = debugInfo;
+        created[27] = debugInfo;
       }
       return created;
     } else {
       // Update
       const existing = useFiber(current, fragment);
-      existing.return = returnFiber;
+      existing[5] = returnFiber;
       if (__DEV__) {
-        existing._debugInfo = debugInfo;
+        existing[27] = debugInfo;
       }
       return existing;
     }
@@ -542,12 +542,12 @@ function createChildReconciler(
       const created = createFiberFromText(
         // $FlowFixMe[unsafe-addition] Flow doesn't want us to use `+` operator with string and bigint
         '' + newChild,
-        returnFiber.mode,
+        returnFiber[16],
         lanes,
       );
-      created.return = returnFiber;
+      created[5] = returnFiber;
       if (__DEV__) {
-        created._debugInfo = debugInfo;
+        created[27] = debugInfo;
       }
       return created;
     }
@@ -557,25 +557,25 @@ function createChildReconciler(
         case REACT_ELEMENT_TYPE: {
           const created = createFiberFromElement(
             newChild,
-            returnFiber.mode,
+            returnFiber[16],
             lanes,
           );
           coerceRef(returnFiber, null, created, newChild);
-          created.return = returnFiber;
+          created[5] = returnFiber;
           if (__DEV__) {
-            created._debugInfo = mergeDebugInfo(debugInfo, newChild._debugInfo);
+            created[27] = mergeDebugInfo(debugInfo, newChild[27]);
           }
           return created;
         }
         case REACT_PORTAL_TYPE: {
           const created = createFiberFromPortal(
             newChild,
-            returnFiber.mode,
+            returnFiber[16],
             lanes,
           );
-          created.return = returnFiber;
+          created[5] = returnFiber;
           if (__DEV__) {
-            created._debugInfo = debugInfo;
+            created[27] = debugInfo;
           }
           return created;
         }
@@ -586,7 +586,7 @@ function createChildReconciler(
             returnFiber,
             init(payload),
             lanes,
-            mergeDebugInfo(debugInfo, newChild._debugInfo), // call merge after init
+            mergeDebugInfo(debugInfo, newChild[27]), // call merge after init
           );
         }
       }
@@ -599,13 +599,13 @@ function createChildReconciler(
       ) {
         const created = createFiberFromFragment(
           newChild,
-          returnFiber.mode,
+          returnFiber[16],
           lanes,
           null,
         );
-        created.return = returnFiber;
+        created[5] = returnFiber;
         if (__DEV__) {
-          created._debugInfo = mergeDebugInfo(debugInfo, newChild._debugInfo);
+          created[27] = mergeDebugInfo(debugInfo, newChild[27]);
         }
         return created;
       }
@@ -619,7 +619,7 @@ function createChildReconciler(
           returnFiber,
           unwrapThenable(thenable),
           lanes,
-          mergeDebugInfo(debugInfo, newChild._debugInfo),
+          mergeDebugInfo(debugInfo, newChild[27]),
         );
       }
 
@@ -656,7 +656,7 @@ function createChildReconciler(
     debugInfo: null | ReactDebugInfo,
   ): Fiber | null {
     // Update the fiber if the keys match, otherwise return null.
-    const key = oldFiber !== null ? oldFiber.key : null;
+    const key = oldFiber !== null ? oldFiber[1] : null;
 
     if (
       (typeof newChild === 'string' && newChild !== '') ||
@@ -682,20 +682,20 @@ function createChildReconciler(
     if (typeof newChild === 'object' && newChild !== null) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE: {
-          if (newChild.key === key) {
+          if (newChild[1] === key) {
             return updateElement(
               returnFiber,
               oldFiber,
               newChild,
               lanes,
-              mergeDebugInfo(debugInfo, newChild._debugInfo),
+              mergeDebugInfo(debugInfo, newChild[27]),
             );
           } else {
             return null;
           }
         }
         case REACT_PORTAL_TYPE: {
-          if (newChild.key === key) {
+          if (newChild[1] === key) {
             return updatePortal(
               returnFiber,
               oldFiber,
@@ -715,7 +715,7 @@ function createChildReconciler(
             oldFiber,
             init(payload),
             lanes,
-            mergeDebugInfo(debugInfo, newChild._debugInfo),
+            mergeDebugInfo(debugInfo, newChild[27]),
           );
         }
       }
@@ -736,7 +736,7 @@ function createChildReconciler(
           newChild,
           lanes,
           null,
-          mergeDebugInfo(debugInfo, newChild._debugInfo),
+          mergeDebugInfo(debugInfo, newChild[27]),
         );
       }
 
@@ -811,20 +811,20 @@ function createChildReconciler(
         case REACT_ELEMENT_TYPE: {
           const matchedFiber =
             existingChildren.get(
-              newChild.key === null ? newIdx : newChild.key,
+              newChild[1] === null ? newIdx : newChild[1],
             ) || null;
           return updateElement(
             returnFiber,
             matchedFiber,
             newChild,
             lanes,
-            mergeDebugInfo(debugInfo, newChild._debugInfo),
+            mergeDebugInfo(debugInfo, newChild[27]),
           );
         }
         case REACT_PORTAL_TYPE: {
           const matchedFiber =
             existingChildren.get(
-              newChild.key === null ? newIdx : newChild.key,
+              newChild[1] === null ? newIdx : newChild[1],
             ) || null;
           return updatePortal(
             returnFiber,
@@ -843,7 +843,7 @@ function createChildReconciler(
             newIdx,
             init(payload),
             lanes,
-            mergeDebugInfo(debugInfo, newChild._debugInfo),
+            mergeDebugInfo(debugInfo, newChild[27]),
           );
       }
 
@@ -860,7 +860,7 @@ function createChildReconciler(
           newChild,
           lanes,
           null,
-          mergeDebugInfo(debugInfo, newChild._debugInfo),
+          mergeDebugInfo(debugInfo, newChild[27]),
         );
       }
 
@@ -922,7 +922,7 @@ function createChildReconciler(
         case REACT_ELEMENT_TYPE:
         case REACT_PORTAL_TYPE:
           warnForMissingKey(child, returnFiber);
-          const key = child.key;
+          const key = child[1];
           if (typeof key !== 'string') {
             break;
           }
@@ -999,11 +999,11 @@ function createChildReconciler(
     let newIdx = 0;
     let nextOldFiber = null;
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
-      if (oldFiber.index > newIdx) {
+      if (oldFiber[8] > newIdx) {
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {
-        nextOldFiber = oldFiber.sibling;
+        nextOldFiber = oldFiber[7];
       }
       const newFiber = updateSlot(
         returnFiber,
@@ -1023,9 +1023,9 @@ function createChildReconciler(
         break;
       }
       if (shouldTrackSideEffects) {
-        if (oldFiber && newFiber.alternate === null) {
+        if (oldFiber && newFiber[22] === null) {
           // We matched the slot, but we didn't reuse the existing fiber, so we
-          // need to delete the existing child.
+          // need to delete the existing[6].
           deleteChild(returnFiber, oldFiber);
         }
       }
@@ -1038,7 +1038,7 @@ function createChildReconciler(
         // I.e. if we had null values before, then we want to defer this
         // for each null value. However, we also don't want to call updateSlot
         // with the previous one.
-        previousNewFiber.sibling = newFiber;
+        previousNewFiber[7] = newFiber;
       }
       previousNewFiber = newFiber;
       oldFiber = nextOldFiber;
@@ -1055,7 +1055,7 @@ function createChildReconciler(
     }
 
     if (oldFiber === null) {
-      // If we don't have any more existing children we can choose a fast path
+      // If we don't have any more existing[6]ren we can choose a fast path
       // since the rest will all be insertions.
       for (; newIdx < newChildren.length; newIdx++) {
         const newFiber = createChild(
@@ -1072,7 +1072,7 @@ function createChildReconciler(
           // TODO: Move out of the loop. This only happens for the first run.
           resultingFirstChild = newFiber;
         } else {
-          previousNewFiber.sibling = newFiber;
+          previousNewFiber[7] = newFiber;
         }
         previousNewFiber = newFiber;
       }
@@ -1098,13 +1098,13 @@ function createChildReconciler(
       );
       if (newFiber !== null) {
         if (shouldTrackSideEffects) {
-          if (newFiber.alternate !== null) {
+          if (newFiber[22] !== null) {
             // The new fiber is a work in progress, but if there exists a
             // current, that means that we reused the fiber. We need to delete
             // it from the child list so that we don't add it to the deletion
             // list.
             existingChildren.delete(
-              newFiber.key === null ? newIdx : newFiber.key,
+              newFiber[1] === null ? newIdx : newFiber[1],
             );
           }
         }
@@ -1112,14 +1112,14 @@ function createChildReconciler(
         if (previousNewFiber === null) {
           resultingFirstChild = newFiber;
         } else {
-          previousNewFiber.sibling = newFiber;
+          previousNewFiber[7] = newFiber;
         }
         previousNewFiber = newFiber;
       }
     }
 
     if (shouldTrackSideEffects) {
-      // Any existing children that weren't consumed above were deleted. We need
+      // Any existing[6]ren that weren't consumed above were deleted. We need
       // to add them to the deletion list.
       existingChildren.forEach(child => deleteChild(returnFiber, child));
     }
@@ -1160,9 +1160,9 @@ function createChildReconciler(
         // as its direct child since we can recreate those by rerendering the component
         // as needed.
         const isGeneratorComponent =
-          returnFiber.tag === FunctionComponent &&
+          returnFiber[0] === FunctionComponent &&
           // $FlowFixMe[method-unbinding]
-          Object.prototype.toString.call(returnFiber.type) ===
+          Object.prototype.toString.call(returnFiber[3]) ===
             '[object GeneratorFunction]' &&
           // $FlowFixMe[method-unbinding]
           Object.prototype.toString.call(newChildren) === '[object Generator]';
@@ -1215,9 +1215,9 @@ function createChildReconciler(
         // as its direct child since we can recreate those by rerendering the component
         // as needed.
         const isGeneratorComponent =
-          returnFiber.tag === FunctionComponent &&
+          returnFiber[0] === FunctionComponent &&
           // $FlowFixMe[method-unbinding]
-          Object.prototype.toString.call(returnFiber.type) ===
+          Object.prototype.toString.call(returnFiber[3]) ===
             '[object AsyncGeneratorFunction]' &&
           // $FlowFixMe[method-unbinding]
           Object.prototype.toString.call(newChildren) ===
@@ -1291,11 +1291,11 @@ function createChildReconciler(
           ? warnOnInvalidKey(step.value, knownKeys, returnFiber)
           : null
     ) {
-      if (oldFiber.index > newIdx) {
+      if (oldFiber[8] > newIdx) {
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {
-        nextOldFiber = oldFiber.sibling;
+        nextOldFiber = oldFiber[7];
       }
       const newFiber = updateSlot(
         returnFiber,
@@ -1315,9 +1315,9 @@ function createChildReconciler(
         break;
       }
       if (shouldTrackSideEffects) {
-        if (oldFiber && newFiber.alternate === null) {
+        if (oldFiber && newFiber[22] === null) {
           // We matched the slot, but we didn't reuse the existing fiber, so we
-          // need to delete the existing child.
+          // need to delete the existing[6].
           deleteChild(returnFiber, oldFiber);
         }
       }
@@ -1330,7 +1330,7 @@ function createChildReconciler(
         // I.e. if we had null values before, then we want to defer this
         // for each null value. However, we also don't want to call updateSlot
         // with the previous one.
-        previousNewFiber.sibling = newFiber;
+        previousNewFiber[7] = newFiber;
       }
       previousNewFiber = newFiber;
       oldFiber = nextOldFiber;
@@ -1347,7 +1347,7 @@ function createChildReconciler(
     }
 
     if (oldFiber === null) {
-      // If we don't have any more existing children we can choose a fast path
+      // If we don't have any more existing[6]ren we can choose a fast path
       // since the rest will all be insertions.
       for (
         ;
@@ -1367,7 +1367,7 @@ function createChildReconciler(
           // TODO: Move out of the loop. This only happens for the first run.
           resultingFirstChild = newFiber;
         } else {
-          previousNewFiber.sibling = newFiber;
+          previousNewFiber[7] = newFiber;
         }
         previousNewFiber = newFiber;
       }
@@ -1401,13 +1401,13 @@ function createChildReconciler(
       );
       if (newFiber !== null) {
         if (shouldTrackSideEffects) {
-          if (newFiber.alternate !== null) {
+          if (newFiber[22] !== null) {
             // The new fiber is a work in progress, but if there exists a
             // current, that means that we reused the fiber. We need to delete
             // it from the child list so that we don't add it to the deletion
             // list.
             existingChildren.delete(
-              newFiber.key === null ? newIdx : newFiber.key,
+              newFiber[1] === null ? newIdx : newFiber[1],
             );
           }
         }
@@ -1415,14 +1415,14 @@ function createChildReconciler(
         if (previousNewFiber === null) {
           resultingFirstChild = newFiber;
         } else {
-          previousNewFiber.sibling = newFiber;
+          previousNewFiber[7] = newFiber;
         }
         previousNewFiber = newFiber;
       }
     }
 
     if (shouldTrackSideEffects) {
-      // Any existing children that weren't consumed above were deleted. We need
+      // Any existing[6]ren that weren't consumed above were deleted. We need
       // to add them to the deletion list.
       existingChildren.forEach(child => deleteChild(returnFiber, child));
     }
@@ -1442,19 +1442,19 @@ function createChildReconciler(
   ): Fiber {
     // There's no need to check for keys on text nodes since we don't have a
     // way to define them.
-    if (currentFirstChild !== null && currentFirstChild.tag === HostText) {
+    if (currentFirstChild !== null && currentFirstChild[0] === HostText) {
       // We already have an existing node so let's just update it and delete
       // the rest.
-      deleteRemainingChildren(returnFiber, currentFirstChild.sibling);
+      deleteRemainingChildren(returnFiber, currentFirstChild[7]);
       const existing = useFiber(currentFirstChild, textContent);
-      existing.return = returnFiber;
+      existing[5] = returnFiber;
       return existing;
     }
     // The existing first child is not a text node so we need to create one
     // and delete the existing ones.
     deleteRemainingChildren(returnFiber, currentFirstChild);
-    const created = createFiberFromText(textContent, returnFiber.mode, lanes);
-    created.return = returnFiber;
+    const created = createFiberFromText(textContent, returnFiber[16], lanes);
+    created[5] = returnFiber;
     return created;
   }
 
@@ -1468,24 +1468,24 @@ function createChildReconciler(
     const key = element.key;
     let child = currentFirstChild;
     while (child !== null) {
-      // TODO: If key === null and child.key === null, then this only applies to
+      // TODO: If key === null and child[1] === null, then this only applies to
       // the first item in the list.
-      if (child.key === key) {
+      if (child[1] === key) {
         const elementType = element.type;
         if (elementType === REACT_FRAGMENT_TYPE) {
-          if (child.tag === Fragment) {
-            deleteRemainingChildren(returnFiber, child.sibling);
+          if (child[0] === Fragment) {
+            deleteRemainingChildren(returnFiber, child[7]);
             const existing = useFiber(child, element.props.children);
-            existing.return = returnFiber;
+            existing[5] = returnFiber;
             if (__DEV__) {
-              existing._debugOwner = element._owner;
-              existing._debugInfo = debugInfo;
+              existing[28] = element._owner;
+              existing[27] = debugInfo;
             }
             return existing;
           }
         } else {
           if (
-            child.elementType === elementType ||
+            child[2] === elementType ||
             // Keep this check inline so it only runs on the false path:
             (__DEV__
               ? isCompatibleFamilyForHotReloading(child, element)
@@ -1497,15 +1497,15 @@ function createChildReconciler(
             (typeof elementType === 'object' &&
               elementType !== null &&
               elementType.$$typeof === REACT_LAZY_TYPE &&
-              resolveLazy(elementType) === child.type)
+              resolveLazy(elementType) === child[3])
           ) {
-            deleteRemainingChildren(returnFiber, child.sibling);
+            deleteRemainingChildren(returnFiber, child[7]);
             const existing = useFiber(child, element.props);
             coerceRef(returnFiber, child, existing, element);
-            existing.return = returnFiber;
+            existing[5] = returnFiber;
             if (__DEV__) {
-              existing._debugOwner = element._owner;
-              existing._debugInfo = debugInfo;
+              existing[28] = element._owner;
+              existing[27] = debugInfo;
             }
             return existing;
           }
@@ -1516,27 +1516,27 @@ function createChildReconciler(
       } else {
         deleteChild(returnFiber, child);
       }
-      child = child.sibling;
+      child = child[7];
     }
 
     if (element.type === REACT_FRAGMENT_TYPE) {
       const created = createFiberFromFragment(
         element.props.children,
-        returnFiber.mode,
+        returnFiber[16],
         lanes,
         element.key,
       );
-      created.return = returnFiber;
+      created[5] = returnFiber;
       if (__DEV__) {
-        created._debugInfo = debugInfo;
+        created[27] = debugInfo;
       }
       return created;
     } else {
-      const created = createFiberFromElement(element, returnFiber.mode, lanes);
+      const created = createFiberFromElement(element, returnFiber[16], lanes);
       coerceRef(returnFiber, currentFirstChild, created, element);
-      created.return = returnFiber;
+      created[5] = returnFiber;
       if (__DEV__) {
-        created._debugInfo = debugInfo;
+        created[27] = debugInfo;
       }
       return created;
     }
@@ -1552,17 +1552,17 @@ function createChildReconciler(
     const key = portal.key;
     let child = currentFirstChild;
     while (child !== null) {
-      // TODO: If key === null and child.key === null, then this only applies to
+      // TODO: If key === null and child[1] === null, then this only applies to
       // the first item in the list.
-      if (child.key === key) {
+      if (child[1] === key) {
         if (
-          child.tag === HostPortal &&
-          child.stateNode.containerInfo === portal.containerInfo &&
-          child.stateNode.implementation === portal.implementation
+          child[0] === HostPortal &&
+          child[4].containerInfo === portal.containerInfo &&
+          child[4].implementation === portal.implementation
         ) {
-          deleteRemainingChildren(returnFiber, child.sibling);
+          deleteRemainingChildren(returnFiber, child[7]);
           const existing = useFiber(child, portal.children || []);
-          existing.return = returnFiber;
+          existing[5] = returnFiber;
           return existing;
         } else {
           deleteRemainingChildren(returnFiber, child);
@@ -1571,11 +1571,11 @@ function createChildReconciler(
       } else {
         deleteChild(returnFiber, child);
       }
-      child = child.sibling;
+      child = child[7];
     }
 
-    const created = createFiberFromPortal(portal, returnFiber.mode, lanes);
-    created.return = returnFiber;
+    const created = createFiberFromPortal(portal, returnFiber[16], lanes);
+    created[5] = returnFiber;
     return created;
   }
 
@@ -1604,8 +1604,8 @@ function createChildReconciler(
     const isUnkeyedTopLevelFragment =
       typeof newChild === 'object' &&
       newChild !== null &&
-      newChild.type === REACT_FRAGMENT_TYPE &&
-      newChild.key === null;
+      newChild[3] === REACT_FRAGMENT_TYPE &&
+      newChild[1] === null;
     if (isUnkeyedTopLevelFragment) {
       newChild = newChild.props.children;
     }
@@ -1620,7 +1620,7 @@ function createChildReconciler(
               currentFirstChild,
               newChild,
               lanes,
-              mergeDebugInfo(debugInfo, newChild._debugInfo),
+              mergeDebugInfo(debugInfo, newChild[27]),
             ),
           );
         case REACT_PORTAL_TYPE:
@@ -1641,7 +1641,7 @@ function createChildReconciler(
             currentFirstChild,
             init(payload),
             lanes,
-            mergeDebugInfo(debugInfo, newChild._debugInfo),
+            mergeDebugInfo(debugInfo, newChild[27]),
           );
       }
 
@@ -1651,7 +1651,7 @@ function createChildReconciler(
           currentFirstChild,
           newChild,
           lanes,
-          mergeDebugInfo(debugInfo, newChild._debugInfo),
+          mergeDebugInfo(debugInfo, newChild[27]),
         );
       }
 
@@ -1661,7 +1661,7 @@ function createChildReconciler(
           currentFirstChild,
           newChild,
           lanes,
-          mergeDebugInfo(debugInfo, newChild._debugInfo),
+          mergeDebugInfo(debugInfo, newChild[27]),
         );
       }
 
@@ -1674,7 +1674,7 @@ function createChildReconciler(
           currentFirstChild,
           newChild,
           lanes,
-          mergeDebugInfo(debugInfo, newChild._debugInfo),
+          mergeDebugInfo(debugInfo, newChild[27]),
         );
       }
 
@@ -1787,35 +1787,35 @@ export function cloneChildFibers(
   current: Fiber | null,
   workInProgress: Fiber,
 ): void {
-  if (current !== null && workInProgress.child !== current.child) {
+  if (current !== null && workInProgress[6] !== current[6]) {
     throw new Error('Resuming work not yet implemented.');
   }
 
-  if (workInProgress.child === null) {
+  if (workInProgress[6] === null) {
     return;
   }
 
-  let currentChild = workInProgress.child;
-  let newChild = createWorkInProgress(currentChild, currentChild.pendingProps);
-  workInProgress.child = newChild;
+  let currentChild = workInProgress[6];
+  let newChild = createWorkInProgress(currentChild, currentChild[11]);
+  workInProgress[6] = newChild;
 
-  newChild.return = workInProgress;
-  while (currentChild.sibling !== null) {
-    currentChild = currentChild.sibling;
-    newChild = newChild.sibling = createWorkInProgress(
+  newChild[5] = workInProgress;
+  while (currentChild[7] !== null) {
+    currentChild = currentChild[7];
+    newChild = newChild[7] = createWorkInProgress(
       currentChild,
-      currentChild.pendingProps,
+      currentChild[11],
     );
-    newChild.return = workInProgress;
+    newChild[5] = workInProgress;
   }
-  newChild.sibling = null;
+  newChild[7] = null;
 }
 
-// Reset a workInProgress child set to prepare it for a second pass.
+// Reset a workInProgress[6] set to prepare it for a second pass.
 export function resetChildFibers(workInProgress: Fiber, lanes: Lanes): void {
-  let child = workInProgress.child;
+  let child = workInProgress[6];
   while (child !== null) {
     resetWorkInProgress(child, lanes);
-    child = child.sibling;
+    child = child[7];
   }
 }

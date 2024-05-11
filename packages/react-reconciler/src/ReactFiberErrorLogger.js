@@ -148,8 +148,8 @@ export function logCaughtError(
     onCaughtError(error, {
       componentStack: errorInfo.stack,
       errorBoundary:
-        boundary.tag === ClassComponent
-          ? boundary.stateNode // This should always be the case as long as we only have class boundaries
+        boundary[0] === ClassComponent
+          ? boundary[4] // This should always be the case as long as we only have class boundaries
           : null,
     });
   } catch (e) {

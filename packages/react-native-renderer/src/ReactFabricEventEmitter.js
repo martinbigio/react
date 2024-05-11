@@ -90,7 +90,7 @@ export function dispatchEvent(
 
   let eventTarget = null;
   if (targetFiber != null) {
-    const stateNode = targetFiber.stateNode;
+    const stateNode = targetFiber[4];
     // Guard against Fiber being unmounted
     if (stateNode != null) {
       // $FlowExpectedError[incompatible-cast] public instances in Fabric do not implement `EventTarget` yet.

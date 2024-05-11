@@ -543,7 +543,7 @@ export function injectIntoGlobalHook(globalObject: any): void {
         helpersByRoot.set(root, helpers);
 
         const current = root.current;
-        const alternate = current.alternate;
+        const alternate = current[22];
 
         // We need to determine whether this root has just (un)mounted.
         // This logic is copy-pasted from similar logic in the DevTools backend.
@@ -551,13 +551,13 @@ export function injectIntoGlobalHook(globalObject: any): void {
 
         if (alternate !== null) {
           const wasMounted =
-            alternate.memoizedState != null &&
-            alternate.memoizedState.element != null &&
+            alternate[14] != null &&
+            alternate[14].element != null &&
             mountedRoots.has(root);
 
           const isMounted =
-            current.memoizedState != null &&
-            current.memoizedState.element != null;
+            current[14] != null &&
+            current[14].element != null;
 
           if (!wasMounted && isMounted) {
             // Mount a new root.

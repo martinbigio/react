@@ -100,8 +100,8 @@ function startProfilerTimer(fiber: Fiber): void {
 
   profilerStartTime = now();
 
-  if (((fiber.actualStartTime: any): number) < 0) {
-    fiber.actualStartTime = now();
+  if (((fiber[24]: any): number) < 0) {
+    fiber[24] = now();
   }
 }
 
@@ -122,9 +122,9 @@ function stopProfilerTimerIfRunningAndRecordDelta(
 
   if (profilerStartTime >= 0) {
     const elapsedTime = now() - profilerStartTime;
-    fiber.actualDuration += elapsedTime;
+    fiber[23] += elapsedTime;
     if (overrideBaseTime) {
-      fiber.selfBaseDuration = elapsedTime;
+      fiber[25] = elapsedTime;
     }
     profilerStartTime = -1;
   }
@@ -142,19 +142,19 @@ function recordLayoutEffectDuration(fiber: Fiber): void {
 
     // Store duration on the next nearest Profiler ancestor
     // Or the root (for the DevTools Profiler to read)
-    let parentFiber = fiber.return;
+    let parentFiber = fiber[5];
     while (parentFiber !== null) {
-      switch (parentFiber.tag) {
+      switch (parentFiber[0]) {
         case HostRoot:
-          const root = parentFiber.stateNode;
+          const root = parentFiber[4];
           root.effectDuration += elapsedTime;
           return;
         case Profiler:
-          const parentStateNode = parentFiber.stateNode;
+          const parentStateNode = parentFiber[4];
           parentStateNode.effectDuration += elapsedTime;
           return;
       }
-      parentFiber = parentFiber.return;
+      parentFiber = parentFiber[5];
     }
   }
 }
@@ -171,17 +171,17 @@ function recordPassiveEffectDuration(fiber: Fiber): void {
 
     // Store duration on the next nearest Profiler ancestor
     // Or the root (for the DevTools Profiler to read)
-    let parentFiber = fiber.return;
+    let parentFiber = fiber[5];
     while (parentFiber !== null) {
-      switch (parentFiber.tag) {
+      switch (parentFiber[0]) {
         case HostRoot:
-          const root = parentFiber.stateNode;
+          const root = parentFiber[4];
           if (root !== null) {
             root.passiveEffectDuration += elapsedTime;
           }
           return;
         case Profiler:
-          const parentStateNode = parentFiber.stateNode;
+          const parentStateNode = parentFiber[4];
           if (parentStateNode !== null) {
             // Detached fibers have their state node cleared out.
             // In this case, the return pointer is also cleared out,
@@ -190,7 +190,7 @@ function recordPassiveEffectDuration(fiber: Fiber): void {
           }
           return;
       }
-      parentFiber = parentFiber.return;
+      parentFiber = parentFiber[5];
     }
   }
 }
@@ -213,11 +213,11 @@ function transferActualDuration(fiber: Fiber): void {
   // Transfer time spent rendering these children so we don't lose it
   // after we rerender. This is used as a helper in special cases
   // where we should count the work of multiple passes.
-  let child = fiber.child;
+  let child = fiber[6];
   while (child) {
     // $FlowFixMe[unsafe-addition] addition with possible null/undefined value
-    fiber.actualDuration += child.actualDuration;
-    child = child.sibling;
+    fiber[23] += child[23];
+    child = child[7];
   }
 }
 

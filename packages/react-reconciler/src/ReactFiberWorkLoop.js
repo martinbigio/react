@@ -597,7 +597,7 @@ export function getCurrentTime(): number {
 
 export function requestUpdateLane(fiber: Fiber): Lane {
   // Special cases
-  const mode = fiber.mode;
+  const mode = fiber[16];
   if (!disableLegacyMode && (mode & ConcurrentMode) === NoMode) {
     return (SyncLane: Lane);
   } else if (
@@ -644,7 +644,7 @@ function requestRetryLane(fiber: Fiber) {
   // from its placeholder state to its primary/resolved state.
 
   // Special cases
-  const mode = fiber.mode;
+  const mode = fiber[16];
   if (!disableLegacyMode && (mode & ConcurrentMode) === NoMode) {
     return (SyncLane: Lane);
   }
@@ -685,7 +685,7 @@ export function requestDeferredLane(): Lane {
     // TODO: As an optimization, we shouldn't entangle the lanes at the root; we
     // can entangle them using the baseLanes of the Suspense boundary instead.
     // We only need to do something special if there's no Suspense boundary.
-    suspenseHandler.flags |= DidDefer;
+    suspenseHandler[17] |= DidDefer;
   }
 
   return workInProgressDeferredLane;
@@ -803,7 +803,7 @@ export function scheduleUpdateOnFiber(
       lane === SyncLane &&
       executionContext === NoContext &&
       !disableLegacyMode &&
-      (fiber.mode & ConcurrentMode) === NoMode
+      (fiber[16] & ConcurrentMode) === NoMode
     ) {
       if (__DEV__ && ReactSharedInternals.isBatchingLegacy) {
         // Treat `act` as if it's inside `batchedUpdates`, even in legacy mode.
@@ -831,7 +831,7 @@ export function scheduleInitialHydrationOnRoot(root: FiberRoot, lane: Lane) {
   // updates, but hydration roots are special because the initial render must
   // match what was rendered on the server.
   const current = root.current;
-  current.lanes = lane;
+  current[20] = lane;
   markRootUpdated(root, lane);
   ensureRootIsScheduled(root);
 }
@@ -873,7 +873,7 @@ export function performConcurrentWorkOnRoot(
     }
   }
 
-  // Determine the next lanes to work on, using the fields stored
+  // Determine the next[20] to work on, using the fields stored
   // on the root.
   // TODO: This was already computed in the caller. Pass it as an argument.
   let lanes = getNextLanes(
@@ -915,7 +915,7 @@ export function performConcurrentWorkOnRoot(
         // TODO: It's possible that even a concurrent render may never have yielded
         // to the main thread, if it was fast enough, or if it expired. We could
         // skip the consistency check in that case, too.
-        const finishedWork: Fiber = (root.current.alternate: any);
+        const finishedWork: Fiber = (root.current[22]: any);
         if (
           renderWasConcurrent &&
           !isRenderConsistentWithExternalStores(finishedWork)
@@ -1005,7 +1005,7 @@ function recoverFromConcurrentError(
     // it's here instead is so we can switch to the synchronous work loop, too.
     // Something to consider for a future refactor.
     const rootWorkInProgress = prepareFreshStack(root, errorRetryLanes);
-    rootWorkInProgress.flags |= ForceClientRender;
+    rootWorkInProgress[17] |= ForceClientRender;
   }
 
   const exitStatus = renderRootSync(root, errorRetryLanes);
@@ -1233,9 +1233,9 @@ function isRenderConsistentWithExternalStores(finishedWork: Fiber): boolean {
   // loop instead of recursion so we can exit early.
   let node: Fiber = finishedWork;
   while (true) {
-    if (node.flags & StoreConsistency) {
+    if (node[17] & StoreConsistency) {
       const updateQueue: FunctionComponentUpdateQueue | null =
-        (node.updateQueue: any);
+        (node[13]: any);
       if (updateQueue !== null) {
         const checks = updateQueue.stores;
         if (checks !== null) {
@@ -1257,23 +1257,23 @@ function isRenderConsistentWithExternalStores(finishedWork: Fiber): boolean {
         }
       }
     }
-    const child = node.child;
-    if (node.subtreeFlags & StoreConsistency && child !== null) {
-      child.return = node;
+    const child = node[6];
+    if (node[18] & StoreConsistency && child !== null) {
+      child[5] = node;
       node = child;
       continue;
     }
     if (node === finishedWork) {
       return true;
     }
-    while (node.sibling === null) {
-      if (node.return === null || node.return === finishedWork) {
+    while (node[7] === null) {
+      if (node[5] === null || node[5] === finishedWork) {
         return true;
       }
-      node = node.return;
+      node = node[5];
     }
-    node.sibling.return = node.return;
-    node = node.sibling;
+    node[7][5] = node[5];
+    node = node[7];
   }
   // Flow doesn't know this is unreachable, but eslint does
   // eslint-disable-next-line no-unreachable
@@ -1400,7 +1400,7 @@ export function performSyncWorkOnRoot(root: FiberRoot, lanes: Lanes): null {
 
   // We now have a consistent tree. Because this is a sync render, we
   // will commit it even if something suspended.
-  const finishedWork: Fiber = (root.current.alternate: any);
+  const finishedWork: Fiber = (root.current[22]: any);
   root.finishedWork = finishedWork;
   root.finishedLanes = lanes;
   commitRoot(
@@ -1586,7 +1586,7 @@ function resetWorkInProgressStack() {
   if (workInProgressSuspendedReason === NotSuspended) {
     // Normal case. Work-in-progress hasn't started yet. Unwind all
     // its parents.
-    interruptedWork = workInProgress.return;
+    interruptedWork = workInProgress[5];
   } else {
     // Work-in-progress is in suspended state. Reset the work loop and unwind
     // both the suspended fiber and all its parents.
@@ -1594,13 +1594,13 @@ function resetWorkInProgressStack() {
     interruptedWork = workInProgress;
   }
   while (interruptedWork !== null) {
-    const current = interruptedWork.alternate;
+    const current = interruptedWork[22];
     unwindInterruptedWork(
       current,
       interruptedWork,
       workInProgressRootRenderLanes,
     );
-    interruptedWork = interruptedWork.return;
+    interruptedWork = interruptedWork[5];
   }
   workInProgress = null;
 }
@@ -1753,7 +1753,7 @@ function handleThrow(root: FiberRoot, thrownValue: any): void {
     return;
   }
 
-  if (enableProfilerTimer && erroredWork.mode & ProfileMode) {
+  if (enableProfilerTimer && erroredWork[16] & ProfileMode) {
     // Record the time spent rendering before an error was thrown. This
     // avoids inaccurate Profiler durations in the case of a
     // suspended render.
@@ -2219,7 +2219,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
             break;
           }
           case SuspendedOnInstanceAndReadyToContinue: {
-            switch (workInProgress.tag) {
+            switch (workInProgress[0]) {
               case HostComponent:
               case HostHoistable:
               case HostSingleton: {
@@ -2230,8 +2230,8 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
                 // Assigning this to a constant so Flow knows the binding won't
                 // be mutated by `preloadInstance`.
                 const hostFiber = workInProgress;
-                const type = hostFiber.type;
-                const props = hostFiber.pendingProps;
+                const type = hostFiber[3];
+                const props = hostFiber[11];
                 const isReady = preloadInstance(type, props);
                 if (isReady) {
                   // The data resolved. Resume the work loop as if nothing
@@ -2240,11 +2240,11 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
                   // already completed.
                   workInProgressSuspendedReason = NotSuspended;
                   workInProgressThrownValue = null;
-                  const sibling = hostFiber.sibling;
+                  const sibling = hostFiber[7];
                   if (sibling !== null) {
                     workInProgress = sibling;
                   } else {
-                    const returnFiber = hostFiber.return;
+                    const returnFiber = hostFiber[5];
                     if (returnFiber !== null) {
                       workInProgress = returnFiber;
                       completeUnitOfWork(returnFiber);
@@ -2365,11 +2365,11 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   // The current, flushed, state of this fiber is the alternate. Ideally
   // nothing should rely on this, but relying on it here means that we don't
   // need an additional field on the work in progress.
-  const current = unitOfWork.alternate;
+  const current = unitOfWork[22];
   setCurrentDebugFiberInDEV(unitOfWork);
 
   let next;
-  if (enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode) {
+  if (enableProfilerTimer && (unitOfWork[16] & ProfileMode) !== NoMode) {
     startProfilerTimer(unitOfWork);
     next = beginWork(current, unitOfWork, entangledRenderLanes);
     stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
@@ -2378,7 +2378,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   }
 
   resetCurrentDebugFiberInDEV();
-  unitOfWork.memoizedProps = unitOfWork.pendingProps;
+  unitOfWork[12] = unitOfWork[11];
   if (next === null) {
     // If this doesn't spawn new work, complete the current work.
     completeUnitOfWork(unitOfWork);
@@ -2395,28 +2395,28 @@ function replaySuspendedUnitOfWork(unitOfWork: Fiber): void {
   // This is a fork of performUnitOfWork specifcally for replaying a fiber that
   // just suspended.
   //
-  const current = unitOfWork.alternate;
+  const current = unitOfWork[22];
   setCurrentDebugFiberInDEV(unitOfWork);
 
   let next;
   setCurrentDebugFiberInDEV(unitOfWork);
   const isProfilingMode =
-    enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode;
+    enableProfilerTimer && (unitOfWork[16] & ProfileMode) !== NoMode;
   if (isProfilingMode) {
     startProfilerTimer(unitOfWork);
   }
-  switch (unitOfWork.tag) {
+  switch (unitOfWork[0]) {
     case SimpleMemoComponent:
     case FunctionComponent: {
       // Resolve `defaultProps`. This logic is copied from `beginWork`.
       // TODO: Consider moving this switch statement into that module. Also,
       // could maybe use this as an opportunity to say `use` doesn't work with
       // `defaultProps` :)
-      const Component = unitOfWork.type;
-      const unresolvedProps = unitOfWork.pendingProps;
+      const Component = unitOfWork[3];
+      const unresolvedProps = unitOfWork[11];
       const resolvedProps =
         disableDefaultPropsExceptForClasses ||
-        unitOfWork.elementType === Component
+        unitOfWork[2] === Component
           ? unresolvedProps
           : resolveDefaultPropsOnNonClassComponent(Component, unresolvedProps);
       let context: any;
@@ -2439,11 +2439,11 @@ function replaySuspendedUnitOfWork(unitOfWork: Fiber): void {
       // TODO: Consider moving this switch statement into that module. Also,
       // could maybe use this as an opportunity to say `use` doesn't work with
       // `defaultProps` :)
-      const Component = unitOfWork.type.render;
-      const unresolvedProps = unitOfWork.pendingProps;
+      const Component = unitOfWork[3].render;
+      const unresolvedProps = unitOfWork[11];
       const resolvedProps =
         disableDefaultPropsExceptForClasses ||
-        unitOfWork.elementType === Component
+        unitOfWork[2] === Component
           ? unresolvedProps
           : resolveDefaultPropsOnNonClassComponent(Component, unresolvedProps);
 
@@ -2452,7 +2452,7 @@ function replaySuspendedUnitOfWork(unitOfWork: Fiber): void {
         unitOfWork,
         resolvedProps,
         Component,
-        unitOfWork.ref,
+        unitOfWork[9],
         workInProgressRootRenderLanes,
       );
       break;
@@ -2493,7 +2493,7 @@ function replaySuspendedUnitOfWork(unitOfWork: Fiber): void {
   // normal work loop.
 
   resetCurrentDebugFiberInDEV();
-  unitOfWork.memoizedProps = unitOfWork.pendingProps;
+  unitOfWork[12] = unitOfWork[11];
   if (next === null) {
     // If this doesn't spawn new work, complete the current work.
     completeUnitOfWork(unitOfWork);
@@ -2518,7 +2518,7 @@ function throwAndUnwindWorkLoop(
   // result in showing a fallback.
   resetSuspendedWorkLoopOnUnwind(unitOfWork);
 
-  const returnFiber = unitOfWork.return;
+  const returnFiber = unitOfWork[5];
   try {
     // Find and mark the nearest Suspense or error boundary that can handle
     // this "exception".
@@ -2547,7 +2547,7 @@ function throwAndUnwindWorkLoop(
     }
   }
 
-  if (unitOfWork.flags & Incomplete) {
+  if (unitOfWork[17] & Incomplete) {
     // Unwind the stack until we reach the nearest boundary.
     unwindUnitOfWork(unitOfWork);
   } else {
@@ -2586,7 +2586,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
   let completedWork: Fiber = unitOfWork;
   do {
     if (__DEV__) {
-      if ((completedWork.flags & Incomplete) !== NoFlags) {
+      if ((completedWork[17] & Incomplete) !== NoFlags) {
         // NOTE: If we re-enable sibling prerendering in some cases, this branch
         // is where we would switch to the unwinding path.
         console.error(
@@ -2599,12 +2599,12 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
-    const current = completedWork.alternate;
-    const returnFiber = completedWork.return;
+    const current = completedWork[22];
+    const returnFiber = completedWork[5];
 
     setCurrentDebugFiberInDEV(completedWork);
     let next;
-    if (!enableProfilerTimer || (completedWork.mode & ProfileMode) === NoMode) {
+    if (!enableProfilerTimer || (completedWork[16] & ProfileMode) === NoMode) {
       next = completeWork(current, completedWork, entangledRenderLanes);
     } else {
       startProfilerTimer(completedWork);
@@ -2620,7 +2620,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
       return;
     }
 
-    const siblingFiber = completedWork.sibling;
+    const siblingFiber = completedWork[7];
     if (siblingFiber !== null) {
       // If there is more work to do in this returnFiber, do that next.
       workInProgress = siblingFiber;
@@ -2645,7 +2645,7 @@ function unwindUnitOfWork(unitOfWork: Fiber): void {
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
-    const current = incompleteWork.alternate;
+    const current = incompleteWork[22];
 
     // This fiber did not complete because something threw. Pop values off
     // the stack without entering the complete phase. If this is a boundary,
@@ -2660,40 +2660,40 @@ function unwindUnitOfWork(unitOfWork: Fiber): void {
       //
       // Since we're restarting, remove anything that is not a host effect
       // from the effect tag.
-      next.flags &= HostEffectMask;
+      next[17] &= HostEffectMask;
       workInProgress = next;
       return;
     }
 
     // Keep unwinding until we reach either a boundary or the root.
 
-    if (enableProfilerTimer && (incompleteWork.mode & ProfileMode) !== NoMode) {
+    if (enableProfilerTimer && (incompleteWork[16] & ProfileMode) !== NoMode) {
       // Record the render duration for the fiber that errored.
       stopProfilerTimerIfRunningAndRecordDelta(incompleteWork, false);
 
       // Include the time spent working on failed children before continuing.
-      let actualDuration = incompleteWork.actualDuration;
-      let child = incompleteWork.child;
+      let actualDuration = incompleteWork[23];
+      let child = incompleteWork[6];
       while (child !== null) {
         // $FlowFixMe[unsafe-addition] addition with possible null/undefined value
-        actualDuration += child.actualDuration;
-        child = child.sibling;
+        actualDuration += child[23];
+        child = child[7];
       }
-      incompleteWork.actualDuration = actualDuration;
+      incompleteWork[23] = actualDuration;
     }
 
     // TODO: Once we stop prerendering siblings, instead of resetting the parent
     // of the node being unwound, we should be able to reset node itself as we
     // unwind the stack. Saves an additional null check.
-    const returnFiber = incompleteWork.return;
+    const returnFiber = incompleteWork[5];
     if (returnFiber !== null) {
       // Mark the parent fiber as incomplete and clear its subtree flags.
       // TODO: Once we stop prerendering siblings, we may be able to get rid of
       // the Incomplete flag because unwinding to the nearest boundary will
       // happen synchronously.
-      returnFiber.flags |= Incomplete;
-      returnFiber.subtreeFlags = NoFlags;
-      returnFiber.deletions = null;
+      returnFiber[17] |= Incomplete;
+      returnFiber[18] = NoFlags;
+      returnFiber[19] = null;
     }
 
     // NOTE: If we re-enable sibling prerendering in some cases, here we
@@ -2818,7 +2818,7 @@ function commitRootImpl(
 
   // Check which lanes no longer have any work scheduled on them, and mark
   // those as finished.
-  let remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+  let remainingLanes = mergeLanes(finishedWork[20], finishedWork[21]);
 
   // Make sure to account for lanes that were updated by a concurrent event
   // during the render phase; don't mark them as finished.
@@ -2847,8 +2847,8 @@ function commitRootImpl(
   // TODO: Delete all other places that schedule the passive effect callback
   // They're redundant.
   if (
-    (finishedWork.subtreeFlags & PassiveMask) !== NoFlags ||
-    (finishedWork.flags & PassiveMask) !== NoFlags
+    (finishedWork[18] & PassiveMask) !== NoFlags ||
+    (finishedWork[17] & PassiveMask) !== NoFlags
   ) {
     if (!rootDoesHavePassiveEffects) {
       rootDoesHavePassiveEffects = true;
@@ -2876,11 +2876,11 @@ function commitRootImpl(
   // only other reason this optimization exists is because it affects profiling.
   // Reconsider whether this is necessary.
   const subtreeHasEffects =
-    (finishedWork.subtreeFlags &
+    (finishedWork[18] &
       (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
     NoFlags;
   const rootHasEffect =
-    (finishedWork.flags &
+    (finishedWork[17] &
       (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
     NoFlags;
 
@@ -3017,7 +3017,7 @@ function commitRootImpl(
     }
   }
 
-  onCommitRootDevTools(finishedWork.stateNode, renderPriorityLevel);
+  onCommitRootDevTools(finishedWork[4], renderPriorityLevel);
 
   if (enableUpdaterTracking) {
     if (isDevToolsPresent) {
@@ -3334,7 +3334,7 @@ function flushPassiveEffectsImpl() {
   // TODO: Move to commitPassiveMountEffects
   onPostCommitRootDevTools(root);
   if (enableProfilerTimer && enableProfilerCommitHooks) {
-    const stateNode = root.current.stateNode;
+    const stateNode = root.current[4];
     stateNode.effectDuration = 0;
     stateNode.passiveEffectDuration = 0;
   }
@@ -3364,7 +3364,7 @@ function captureCommitPhaseErrorOnRoot(
 ) {
   const errorInfo = createCapturedValueAtFiber(error, sourceFiber);
   const update = createRootErrorUpdate(
-    rootFiber.stateNode,
+    rootFiber[4],
     errorInfo,
     (SyncLane: Lane),
   );
@@ -3383,7 +3383,7 @@ export function captureCommitPhaseError(
   if (__DEV__) {
     setIsRunningInsertionEffect(false);
   }
-  if (sourceFiber.tag === HostRoot) {
+  if (sourceFiber[0] === HostRoot) {
     // Error was thrown at the root. There is no parent, so the root
     // itself should capture it.
     captureCommitPhaseErrorOnRoot(sourceFiber, sourceFiber, error);
@@ -3392,12 +3392,12 @@ export function captureCommitPhaseError(
 
   let fiber = nearestMountedAncestor;
   while (fiber !== null) {
-    if (fiber.tag === HostRoot) {
+    if (fiber[0] === HostRoot) {
       captureCommitPhaseErrorOnRoot(fiber, sourceFiber, error);
       return;
-    } else if (fiber.tag === ClassComponent) {
-      const ctor = fiber.type;
-      const instance = fiber.stateNode;
+    } else if (fiber[0] === ClassComponent) {
+      const ctor = fiber[3];
+      const instance = fiber[4];
       if (
         typeof ctor.getDerivedStateFromError === 'function' ||
         (typeof instance.componentDidCatch === 'function' &&
@@ -3414,7 +3414,7 @@ export function captureCommitPhaseError(
         return;
       }
     }
-    fiber = fiber.return;
+    fiber = fiber[5];
   }
 
   if (__DEV__) {
@@ -3444,7 +3444,7 @@ export function attachPingListener(
   // Only attach a listener if one does not already exist for the lanes
   // we're currently rendering (which acts like a "thread ID" here).
   //
-  // We only need to do this in concurrent mode. Legacy Suspense always
+  // We only need to do this in concurrent[16]. Legacy Suspense always
   // commits fallbacks synchronously, so there are no pings.
   let pingCache = root.pingCache;
   let threadIDs;
@@ -3551,7 +3551,7 @@ function retryTimedOutBoundary(boundaryFiber: Fiber, retryLane: Lane) {
 }
 
 export function retryDehydratedSuspenseBoundary(boundaryFiber: Fiber) {
-  const suspenseState: null | SuspenseState = boundaryFiber.memoizedState;
+  const suspenseState: null | SuspenseState = boundaryFiber[14];
   let retryLane: Lane = NoLane;
   if (suspenseState !== null) {
     retryLane = suspenseState.retryLane;
@@ -3562,19 +3562,19 @@ export function retryDehydratedSuspenseBoundary(boundaryFiber: Fiber) {
 export function resolveRetryWakeable(boundaryFiber: Fiber, wakeable: Wakeable) {
   let retryLane: Lane = NoLane; // Default
   let retryCache: WeakSet<Wakeable> | Set<Wakeable> | null;
-  switch (boundaryFiber.tag) {
+  switch (boundaryFiber[0]) {
     case SuspenseComponent:
-      retryCache = boundaryFiber.stateNode;
-      const suspenseState: null | SuspenseState = boundaryFiber.memoizedState;
+      retryCache = boundaryFiber[4];
+      const suspenseState: null | SuspenseState = boundaryFiber[14];
       if (suspenseState !== null) {
         retryLane = suspenseState.retryLane;
       }
       break;
     case SuspenseListComponent:
-      retryCache = boundaryFiber.stateNode;
+      retryCache = boundaryFiber[4];
       break;
     case OffscreenComponent: {
-      const instance: OffscreenInstance = boundaryFiber.stateNode;
+      const instance: OffscreenInstance = boundaryFiber[4];
       retryCache = instance._retryCache;
       break;
     }
@@ -3649,15 +3649,15 @@ function recursivelyTraverseAndDoubleInvokeEffectsInDEV(
   parentFiber: Fiber,
   isInStrictMode: boolean,
 ) {
-  if ((parentFiber.subtreeFlags & (PlacementDEV | Visibility)) === NoFlags) {
+  if ((parentFiber[18] & (PlacementDEV | Visibility)) === NoFlags) {
     // Parent's descendants have already had effects double invoked.
     // Early exit to avoid unnecessary tree traversal.
     return;
   }
-  let child = parentFiber.child;
+  let child = parentFiber[6];
   while (child !== null) {
     doubleInvokeEffectsInDEVIfNecessary(root, child, isInStrictMode);
-    child = child.sibling;
+    child = child[7];
   }
 }
 
@@ -3671,7 +3671,7 @@ function doubleInvokeEffectsOnFiber(
   if (shouldDoubleInvokePassiveEffects) {
     disconnectPassiveEffect(fiber);
   }
-  reappearLayoutEffects(root, fiber.alternate, fiber, false);
+  reappearLayoutEffects(root, fiber[22], fiber, false);
   if (shouldDoubleInvokePassiveEffects) {
     reconnectPassiveEffects(root, fiber, NoLanes, null, false);
   }
@@ -3682,19 +3682,19 @@ function doubleInvokeEffectsInDEVIfNecessary(
   fiber: Fiber,
   parentIsInStrictMode: boolean,
 ) {
-  const isStrictModeFiber = fiber.type === REACT_STRICT_MODE_TYPE;
+  const isStrictModeFiber = fiber[3] === REACT_STRICT_MODE_TYPE;
   const isInStrictMode = parentIsInStrictMode || isStrictModeFiber;
 
   // First case: the fiber **is not** of type OffscreenComponent. No
   // special rules apply to double invoking effects.
-  if (fiber.tag !== OffscreenComponent) {
-    if (fiber.flags & PlacementDEV) {
+  if (fiber[0] !== OffscreenComponent) {
+    if (fiber[17] & PlacementDEV) {
       setCurrentDebugFiberInDEV(fiber);
       if (isInStrictMode) {
         doubleInvokeEffectsOnFiber(
           root,
           fiber,
-          (fiber.mode & NoStrictPassiveEffectsMode) === NoMode,
+          (fiber[16] & NoStrictPassiveEffectsMode) === NoMode,
         );
       }
       resetCurrentDebugFiberInDEV();
@@ -3710,15 +3710,15 @@ function doubleInvokeEffectsInDEVIfNecessary(
 
   // Second case: the fiber **is** of type OffscreenComponent.
   // This branch contains cases specific to Offscreen.
-  if (fiber.memoizedState === null) {
+  if (fiber[14] === null) {
     // Only consider Offscreen that is visible.
     // TODO (Offscreen) Handle manual mode.
     setCurrentDebugFiberInDEV(fiber);
-    if (isInStrictMode && fiber.flags & Visibility) {
+    if (isInStrictMode && fiber[17] & Visibility) {
       // Double invoke effects on Offscreen's subtree only
       // if it is visible and its visibility has changed.
       doubleInvokeEffectsOnFiber(root, fiber);
-    } else if (fiber.subtreeFlags & PlacementDEV) {
+    } else if (fiber[18] & PlacementDEV) {
       // Something in the subtree could have been suspended.
       // We need to continue traversal and find newly inserted fibers.
       recursivelyTraverseAndDoubleInvokeEffectsInDEV(
@@ -3741,7 +3741,7 @@ function commitDoubleInvokeEffectsInDEV(
 
       if (
         (disableLegacyMode || root.tag === ConcurrentRoot) &&
-        !(root.current.mode & (StrictLegacyMode | StrictEffectsMode))
+        !(root.current[16] & (StrictLegacyMode | StrictEffectsMode))
       ) {
         doubleInvokeEffects = false;
       }
@@ -3785,22 +3785,22 @@ function invokeEffectsInDev(
   let current: null | Fiber = firstChild;
   let subtreeRoot = null;
   while (current != null) {
-    const primarySubtreeFlag = current.subtreeFlags & fiberFlags;
+    const primarySubtreeFlag = current[18] & fiberFlags;
     if (
       current !== subtreeRoot &&
-      current.child != null &&
+      current[6] != null &&
       primarySubtreeFlag !== NoFlags
     ) {
-      current = current.child;
+      current = current[6];
     } else {
-      if ((current.flags & fiberFlags) !== NoFlags) {
+      if ((current[17] & fiberFlags) !== NoFlags) {
         invokeEffectFn(current);
       }
 
-      if (current.sibling !== null) {
-        current = current.sibling;
+      if (current[7] !== null) {
+        current = current[7];
       } else {
-        current = subtreeRoot = current.return;
+        current = subtreeRoot = current[5];
       }
     }
   }
@@ -3814,11 +3814,11 @@ export function warnAboutUpdateOnNotYetMountedFiberInDEV(fiber: Fiber) {
       return;
     }
 
-    if (!disableLegacyMode && !(fiber.mode & ConcurrentMode)) {
+    if (!disableLegacyMode && !(fiber[16] & ConcurrentMode)) {
       return;
     }
 
-    const tag = fiber.tag;
+    const tag = fiber[0];
     if (
       tag !== HostRoot &&
       tag !== ClassComponent &&
@@ -3872,7 +3872,7 @@ if (__DEV__) {
 function warnAboutRenderPhaseUpdatesInDEV(fiber: Fiber) {
   if (__DEV__) {
     if (ReactCurrentDebugFiberIsRenderingInDEV) {
-      switch (fiber.tag) {
+      switch (fiber[0]) {
         case FunctionComponent:
         case ForwardRef:
         case SimpleMemoComponent: {
@@ -3953,7 +3953,7 @@ function shouldForceFlushFallbacksInDEV() {
 
 function warnIfUpdatesNotWrappedWithActDEV(fiber: Fiber): void {
   if (__DEV__) {
-    if (disableLegacyMode || fiber.mode & ConcurrentMode) {
+    if (disableLegacyMode || fiber[16] & ConcurrentMode) {
       if (!isConcurrentActEnvironment()) {
         // Not in an act environment. No need to warn.
         return;
@@ -3970,9 +3970,9 @@ function warnIfUpdatesNotWrappedWithActDEV(fiber: Fiber): void {
         return;
       }
       if (
-        fiber.tag !== FunctionComponent &&
-        fiber.tag !== ForwardRef &&
-        fiber.tag !== SimpleMemoComponent
+        fiber[0] !== FunctionComponent &&
+        fiber[0] !== ForwardRef &&
+        fiber[0] !== SimpleMemoComponent
       ) {
         // For backwards compatibility with pre-hooks code, legacy mode only
         // warns for updates that originate from a hook.

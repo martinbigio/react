@@ -65,7 +65,7 @@ export type OffscreenInstance = {
 
 export function isOffscreenManual(offscreenFiber: Fiber): boolean {
   return (
-    offscreenFiber.memoizedProps !== null &&
-    offscreenFiber.memoizedProps.mode === 'manual'
+    offscreenFiber[12] !== null &&
+    offscreenFiber[12].mode === 'manual'
   );
 }

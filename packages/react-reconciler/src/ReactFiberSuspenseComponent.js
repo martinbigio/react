@@ -72,8 +72,8 @@ export type RetryQueue = Set<Wakeable>;
 export function findFirstSuspended(row: Fiber): null | Fiber {
   let node = row;
   while (node !== null) {
-    if (node.tag === SuspenseComponent) {
-      const state: SuspenseState | null = node.memoizedState;
+    if (node[0] === SuspenseComponent) {
+      const state: SuspenseState | null = node[14];
       if (state !== null) {
         const dehydrated: null | SuspenseInstance = state.dehydrated;
         if (
@@ -85,31 +85,31 @@ export function findFirstSuspended(row: Fiber): null | Fiber {
         }
       }
     } else if (
-      node.tag === SuspenseListComponent &&
+      node[0] === SuspenseListComponent &&
       // revealOrder undefined can't be trusted because it don't
       // keep track of whether it suspended or not.
-      node.memoizedProps.revealOrder !== undefined
+      node[12].revealOrder !== undefined
     ) {
-      const didSuspend = (node.flags & DidCapture) !== NoFlags;
+      const didSuspend = (node[17] & DidCapture) !== NoFlags;
       if (didSuspend) {
         return node;
       }
-    } else if (node.child !== null) {
-      node.child.return = node;
-      node = node.child;
+    } else if (node[6] !== null) {
+      node[6][5] = node;
+      node = node[6];
       continue;
     }
     if (node === row) {
       return null;
     }
-    while (node.sibling === null) {
-      if (node.return === null || node.return === row) {
+    while (node[7] === null) {
+      if (node[5] === null || node[5] === row) {
         return null;
       }
-      node = node.return;
+      node = node[5];
     }
-    node.sibling.return = node.return;
-    node = node.sibling;
+    node[7][5] = node[5];
+    node = node[7];
   }
   return null;
 }

@@ -208,7 +208,7 @@ export function pushRootMarkerInstance(workInProgress: Fiber): void {
     // transitions map. Each entry in this map functions like a tracing
     // marker does, so we can push it onto the marker instance stack
     const transitions = getWorkInProgressTransitions();
-    const root: FiberRoot = workInProgress.stateNode;
+    const root: FiberRoot = workInProgress[4];
 
     if (transitions !== null) {
       transitions.forEach(transition => {

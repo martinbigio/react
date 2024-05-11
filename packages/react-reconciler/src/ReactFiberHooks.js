@@ -508,19 +508,19 @@ export function renderWithHooks<Props, SecondArg>(
   if (__DEV__) {
     hookTypesDev =
       current !== null
-        ? ((current._debugHookTypes: any): Array<HookType>)
+        ? ((current[31]: any): Array<HookType>)
         : null;
     hookTypesUpdateIndexDev = -1;
     // Used for hot reloading:
     ignorePreviousDependencies =
-      current !== null && current.type !== workInProgress.type;
+      current !== null && current[3] !== workInProgress[3];
 
     warnIfAsyncClientComponent(Component);
   }
 
-  workInProgress.memoizedState = null;
-  workInProgress.updateQueue = null;
-  workInProgress.lanes = NoLanes;
+  workInProgress[14] = null;
+  workInProgress[13] = null;
+  workInProgress[20] = NoLanes;
 
   // The following should have already been reset
   // currentHook = null;
@@ -539,7 +539,7 @@ export function renderWithHooks<Props, SecondArg>(
   // Non-stateful hooks (e.g. context) don't get added to memoizedState,
   // so memoizedState would be null during updates and mounts.
   if (__DEV__) {
-    if (current !== null && current.memoizedState !== null) {
+    if (current !== null && current[14] !== null) {
       ReactSharedInternals.H = HooksDispatcherOnUpdateInDEV;
     } else if (hookTypesDev !== null) {
       // This dispatcher handles an edge case where a component is updating,
@@ -553,7 +553,7 @@ export function renderWithHooks<Props, SecondArg>(
     }
   } else {
     ReactSharedInternals.H =
-      current === null || current.memoizedState === null
+      current === null || current[14] === null
         ? HooksDispatcherOnMount
         : HooksDispatcherOnUpdate;
   }
@@ -587,7 +587,7 @@ export function renderWithHooks<Props, SecondArg>(
   const shouldDoubleRenderDEV =
     __DEV__ &&
     debugRenderPhaseSideEffectsForStrictMode &&
-    (workInProgress.mode & StrictLegacyMode) !== NoMode;
+    (workInProgress[16] & StrictLegacyMode) !== NoMode;
 
   shouldDoubleInvokeUserFnsInHooksDEV = shouldDoubleRenderDEV;
   let children = Component(props, secondArg);
@@ -631,7 +631,7 @@ function finishRenderingHooks<Props, SecondArg>(
   Component: (p: Props, arg: SecondArg) => any,
 ): void {
   if (__DEV__) {
-    workInProgress._debugHookTypes = hookTypesDev;
+    workInProgress[31] = hookTypesDev;
   }
 
   // We can assume the previous dispatcher is always this one, since we set it
@@ -660,14 +660,14 @@ function finishRenderingHooks<Props, SecondArg>(
     // example, in the SuspenseList implementation.
     if (
       current !== null &&
-      (current.flags & StaticMaskEffect) !==
-        (workInProgress.flags & StaticMaskEffect) &&
+      (current[17] & StaticMaskEffect) !==
+        (workInProgress[17] & StaticMaskEffect) &&
       // Disable this warning in legacy mode, because legacy Suspense is weird
       // and creates false positives. To make this work in legacy mode, we'd
       // need to mark fibers that commit in an incomplete state, somehow. For
       // now I'll disable the warning that most of the bugs that would trigger
-      // it are either exclusive to concurrent mode or exist in both.
-      (disableLegacyMode || (current.mode & ConcurrentMode) !== NoMode)
+      // it are either exclusive to concurrent[16] or exist in both.
+      (disableLegacyMode || (current[16] & ConcurrentMode) !== NoMode)
     ) {
       console.error(
         'Internal React error: Expected static flag was missing. Please ' +
@@ -700,7 +700,7 @@ function finishRenderingHooks<Props, SecondArg>(
         // internal API), we could compare in there. OTOH, we only hit this case
         // if everything else bails out, so on the whole it might be better to
         // keep the comparison out of the common path.
-        const currentDependencies = current.dependencies;
+        const currentDependencies = current[15];
         if (
           currentDependencies !== null &&
           checkIfContextChanged(currentDependencies)
@@ -751,7 +751,7 @@ export function replaySuspendedComponentWithHooks<Props, SecondArg>(
     hookTypesUpdateIndexDev = -1;
     // Used for hot reloading:
     ignorePreviousDependencies =
-      current !== null && current.type !== workInProgress.type;
+      current !== null && current[3] !== workInProgress[3];
   }
   const children = renderWithHooksAgain(
     workInProgress,
@@ -811,7 +811,7 @@ function renderWithHooksAgain<Props, SecondArg>(
     currentHook = null;
     workInProgressHook = null;
 
-    workInProgress.updateQueue = null;
+    workInProgress[13] = null;
 
     if (__DEV__) {
       // Also validate hook order for cascading updates.
@@ -868,7 +868,7 @@ export function TransitionAwareHostComponent(): TransitionStatus {
     currentHook !== null ? currentHook.memoizedState : null;
   if (prevResetState !== nextResetState) {
     // Schedule a form reset
-    currentlyRenderingFiber.flags |= FormReset;
+    currentlyRenderingFiber[17] |= FormReset;
   }
 
   return nextState;
@@ -888,20 +888,20 @@ export function bailoutHooks(
   workInProgress: Fiber,
   lanes: Lanes,
 ): void {
-  workInProgress.updateQueue = current.updateQueue;
+  workInProgress[13] = current[13];
   // TODO: Don't need to reset the flags here, because they're reset in the
   // complete phase (bubbleProperties).
-  if (__DEV__ && (workInProgress.mode & StrictEffectsMode) !== NoMode) {
-    workInProgress.flags &= ~(
+  if (__DEV__ && (workInProgress[16] & StrictEffectsMode) !== NoMode) {
+    workInProgress[17] &= ~(
       MountPassiveDevEffect |
       MountLayoutDevEffect |
       PassiveEffect |
       UpdateEffect
     );
   } else {
-    workInProgress.flags &= ~(PassiveEffect | UpdateEffect);
+    workInProgress[17] &= ~(PassiveEffect | UpdateEffect);
   }
-  current.lanes = removeLanes(current.lanes, lanes);
+  current[20] = removeLanes(current[20], lanes);
 }
 
 export function resetHooksAfterThrow(): void {
@@ -928,7 +928,7 @@ export function resetHooksOnUnwind(workInProgress: Fiber): void {
     // Only reset the updates from the queue if it has a clone. If it does
     // not have a clone, that means it wasn't processed, and the updates were
     // scheduled before we entered the render phase.
-    let hook: Hook | null = workInProgress.memoizedState;
+    let hook: Hook | null = workInProgress[14];
     while (hook !== null) {
       const queue = hook.queue;
       if (queue !== null) {
@@ -971,7 +971,7 @@ function mountWorkInProgressHook(): Hook {
 
   if (workInProgressHook === null) {
     // This is the first hook in the list
-    currentlyRenderingFiber.memoizedState = workInProgressHook = hook;
+    currentlyRenderingFiber[14] = workInProgressHook = hook;
   } else {
     // Append to the end of the list
     workInProgressHook = workInProgressHook.next = hook;
@@ -986,9 +986,9 @@ function updateWorkInProgressHook(): Hook {
   // use as a base.
   let nextCurrentHook: null | Hook;
   if (currentHook === null) {
-    const current = currentlyRenderingFiber.alternate;
+    const current = currentlyRenderingFiber[22];
     if (current !== null) {
-      nextCurrentHook = current.memoizedState;
+      nextCurrentHook = current[14];
     } else {
       nextCurrentHook = null;
     }
@@ -998,7 +998,7 @@ function updateWorkInProgressHook(): Hook {
 
   let nextWorkInProgressHook: null | Hook;
   if (workInProgressHook === null) {
-    nextWorkInProgressHook = currentlyRenderingFiber.memoizedState;
+    nextWorkInProgressHook = currentlyRenderingFiber[14];
   } else {
     nextWorkInProgressHook = workInProgressHook.next;
   }
@@ -1013,7 +1013,7 @@ function updateWorkInProgressHook(): Hook {
     // Clone from the current hook.
 
     if (nextCurrentHook === null) {
-      const currentFiber = currentlyRenderingFiber.alternate;
+      const currentFiber = currentlyRenderingFiber[22];
       if (currentFiber === null) {
         // This is the initial render. This branch is reached when the component
         // suspends, resumes, then renders an additional hook.
@@ -1041,7 +1041,7 @@ function updateWorkInProgressHook(): Hook {
 
     if (workInProgressHook === null) {
       // This is the first hook in the list.
-      currentlyRenderingFiber.memoizedState = workInProgressHook = newHook;
+      currentlyRenderingFiber[14] = workInProgressHook = newHook;
     } else {
       // Append to the end of the list.
       workInProgressHook = workInProgressHook.next = newHook;
@@ -1081,9 +1081,9 @@ function useThenable<T>(thenable: Thenable<T>): T {
   }
   const result = trackUsedThenable(thenableState, thenable, index);
   if (
-    currentlyRenderingFiber.alternate === null &&
+    currentlyRenderingFiber[22] === null &&
     (workInProgressHook === null
-      ? currentlyRenderingFiber.memoizedState === null
+      ? currentlyRenderingFiber[14] === null
       : workInProgressHook.next === null)
   ) {
     // Initial render, and either this is the first time the component is
@@ -1120,16 +1120,16 @@ function useMemoCache(size: number): Array<any> {
   let memoCache = null;
   // Fast-path, load memo cache from wip fiber if already prepared
   let updateQueue: FunctionComponentUpdateQueue | null =
-    (currentlyRenderingFiber.updateQueue: any);
+    (currentlyRenderingFiber[13]: any);
   if (updateQueue !== null) {
     memoCache = updateQueue.memoCache;
   }
   // Otherwise clone from the current fiber
   if (memoCache == null) {
-    const current: Fiber | null = currentlyRenderingFiber.alternate;
+    const current: Fiber | null = currentlyRenderingFiber[22];
     if (current !== null) {
       const currentUpdateQueue: FunctionComponentUpdateQueue | null =
-        (current.updateQueue: any);
+        (current[13]: any);
       if (currentUpdateQueue !== null) {
         const currentMemoCache: ?MemoCache = currentUpdateQueue.memoCache;
         if (currentMemoCache != null) {
@@ -1175,7 +1175,7 @@ function useMemoCache(size: number): Array<any> {
   }
   if (updateQueue === null) {
     updateQueue = createFunctionComponentUpdateQueue();
-    currentlyRenderingFiber.updateQueue = updateQueue;
+    currentlyRenderingFiber[13] = updateQueue;
   }
   updateQueue.memoCache = memoCache;
 
@@ -1346,8 +1346,8 @@ function updateReducerImpl<S, A>(
         // Update the remaining priority in the queue.
         // TODO: Don't need to accumulate this. Instead, we can remove
         // renderLanes from the original lanes.
-        currentlyRenderingFiber.lanes = mergeLanes(
-          currentlyRenderingFiber.lanes,
+        currentlyRenderingFiber[20] = mergeLanes(
+          currentlyRenderingFiber[20],
           updateLane,
         );
         markSkippedUpdateLanes(updateLane);
@@ -1424,8 +1424,8 @@ function updateReducerImpl<S, A>(
             // Update the remaining priority in the queue.
             // TODO: Don't need to accumulate this. Instead, we can remove
             // renderLanes from the original lanes.
-            currentlyRenderingFiber.lanes = mergeLanes(
-              currentlyRenderingFiber.lanes,
+            currentlyRenderingFiber[20] = mergeLanes(
+              currentlyRenderingFiber[20],
               revertLane,
             );
             markSkippedUpdateLanes(revertLane);
@@ -1629,7 +1629,7 @@ function mountSyncExternalStore<T>(
   // clean-up function, and we track the deps correctly, we can call pushEffect
   // directly, without storing any additional state. For the same reason, we
   // don't need to set a static flag, either.
-  fiber.flags |= PassiveEffect;
+  fiber[17] |= PassiveEffect;
   pushEffect(
     HookHasEffect | HookPassive,
     updateStoreInstance.bind(null, fiber, inst, nextSnapshot, getSnapshot),
@@ -1688,7 +1688,7 @@ function updateSyncExternalStore<T>(
   ]);
 
   // Whenever getSnapshot or subscribe changes, we need to check in the
-  // commit phase if there was an interleaved mutation. In concurrent mode
+  // commit phase if there was an interleaved mutation. In concurrent[16]
   // this can happen all the time, but even in synchronous mode, an earlier
   // effect may have mutated the store.
   if (
@@ -1699,7 +1699,7 @@ function updateSyncExternalStore<T>(
     (workInProgressHook !== null &&
       workInProgressHook.memoizedState.tag & HookHasEffect)
   ) {
-    fiber.flags |= PassiveEffect;
+    fiber[17] |= PassiveEffect;
     pushEffect(
       HookHasEffect | HookPassive,
       updateStoreInstance.bind(null, fiber, inst, nextSnapshot, getSnapshot),
@@ -1731,16 +1731,16 @@ function pushStoreConsistencyCheck<T>(
   getSnapshot: () => T,
   renderedSnapshot: T,
 ): void {
-  fiber.flags |= StoreConsistency;
+  fiber[17] |= StoreConsistency;
   const check: StoreConsistencyCheck<T> = {
     getSnapshot,
     value: renderedSnapshot,
   };
   let componentUpdateQueue: null | FunctionComponentUpdateQueue =
-    (currentlyRenderingFiber.updateQueue: any);
+    (currentlyRenderingFiber[13]: any);
   if (componentUpdateQueue === null) {
     componentUpdateQueue = createFunctionComponentUpdateQueue();
-    currentlyRenderingFiber.updateQueue = (componentUpdateQueue: any);
+    currentlyRenderingFiber[13] = (componentUpdateQueue: any);
     componentUpdateQueue.stores = [check];
   } else {
     const stores = componentUpdateQueue.stores;
@@ -2101,7 +2101,7 @@ function runActionStateAction<S, P>(
           console.warn(
             'Detected a large number of updates inside startTransition. ' +
               'If this is due to a subscription please re-write it to use React provided hooks. ' +
-              'Otherwise concurrent mode guarantees are off the table.',
+              'Otherwise concurrent[16] guarantees are off the table.',
           );
         }
       }
@@ -2274,7 +2274,7 @@ function updateActionStateImpl<S, P>(
   // Check if a new action was passed. If so, update it in an effect.
   const prevAction = actionQueueHook.memoizedState;
   if (action !== prevAction) {
-    currentlyRenderingFiber.flags |= PassiveEffect;
+    currentlyRenderingFiber[17] |= PassiveEffect;
     pushEffect(
       HookHasEffect | HookPassive,
       actionStateActionEffect.bind(null, actionQueue, action),
@@ -2350,10 +2350,10 @@ function pushEffect(
     next: (null: any),
   };
   let componentUpdateQueue: null | FunctionComponentUpdateQueue =
-    (currentlyRenderingFiber.updateQueue: any);
+    (currentlyRenderingFiber[13]: any);
   if (componentUpdateQueue === null) {
     componentUpdateQueue = createFunctionComponentUpdateQueue();
-    currentlyRenderingFiber.updateQueue = (componentUpdateQueue: any);
+    currentlyRenderingFiber[13] = (componentUpdateQueue: any);
     componentUpdateQueue.lastEffect = effect.next = effect;
   } else {
     const lastEffect = componentUpdateQueue.lastEffect;
@@ -2393,7 +2393,7 @@ function mountEffectImpl(
 ): void {
   const hook = mountWorkInProgressHook();
   const nextDeps = deps === undefined ? null : deps;
-  currentlyRenderingFiber.flags |= fiberFlags;
+  currentlyRenderingFiber[17] |= fiberFlags;
   hook.memoizedState = pushEffect(
     HookHasEffect | hookFlags,
     create,
@@ -2426,7 +2426,7 @@ function updateEffectImpl(
     }
   }
 
-  currentlyRenderingFiber.flags |= fiberFlags;
+  currentlyRenderingFiber[17] |= fiberFlags;
 
   hook.memoizedState = pushEffect(
     HookHasEffect | hookFlags,
@@ -2442,8 +2442,8 @@ function mountEffect(
 ): void {
   if (
     __DEV__ &&
-    (currentlyRenderingFiber.mode & StrictEffectsMode) !== NoMode &&
-    (currentlyRenderingFiber.mode & NoStrictPassiveEffectsMode) === NoMode
+    (currentlyRenderingFiber[16] & StrictEffectsMode) !== NoMode &&
+    (currentlyRenderingFiber[16] & NoStrictPassiveEffectsMode) === NoMode
   ) {
     mountEffectImpl(
       MountPassiveDevEffect | PassiveEffect | PassiveStaticEffect,
@@ -2471,12 +2471,12 @@ function updateEffect(
 function useEffectEventImpl<Args, Return, F: (...Array<Args>) => Return>(
   payload: EventFunctionPayload<Args, Return, F>,
 ) {
-  currentlyRenderingFiber.flags |= UpdateEffect;
+  currentlyRenderingFiber[17] |= UpdateEffect;
   let componentUpdateQueue: null | FunctionComponentUpdateQueue =
-    (currentlyRenderingFiber.updateQueue: any);
+    (currentlyRenderingFiber[13]: any);
   if (componentUpdateQueue === null) {
     componentUpdateQueue = createFunctionComponentUpdateQueue();
-    currentlyRenderingFiber.updateQueue = (componentUpdateQueue: any);
+    currentlyRenderingFiber[13] = (componentUpdateQueue: any);
     componentUpdateQueue.events = [payload];
   } else {
     const events = componentUpdateQueue.events;
@@ -2543,7 +2543,7 @@ function mountLayoutEffect(
   let fiberFlags: Flags = UpdateEffect | LayoutStaticEffect;
   if (
     __DEV__ &&
-    (currentlyRenderingFiber.mode & StrictEffectsMode) !== NoMode
+    (currentlyRenderingFiber[16] & StrictEffectsMode) !== NoMode
   ) {
     fiberFlags |= MountLayoutDevEffect;
   }
@@ -2614,7 +2614,7 @@ function mountImperativeHandle<T>(
   let fiberFlags: Flags = UpdateEffect | LayoutStaticEffect;
   if (
     __DEV__ &&
-    (currentlyRenderingFiber.mode & StrictEffectsMode) !== NoMode
+    (currentlyRenderingFiber[16] & StrictEffectsMode) !== NoMode
   ) {
     fiberFlags |= MountLayoutDevEffect;
   }
@@ -2762,8 +2762,8 @@ function mountDeferredValueImpl<T>(hook: Hook, value: T, initialValue?: T): T {
 
     // Schedule a deferred render to switch to the final value.
     const deferredLane = requestDeferredLane();
-    currentlyRenderingFiber.lanes = mergeLanes(
-      currentlyRenderingFiber.lanes,
+    currentlyRenderingFiber[20] = mergeLanes(
+      currentlyRenderingFiber[20],
       deferredLane,
     );
     markSkippedUpdateLanes(deferredLane);
@@ -2808,8 +2808,8 @@ function updateDeferredValueImpl<T>(
 
       // Schedule a deferred render
       const deferredLane = requestDeferredLane();
-      currentlyRenderingFiber.lanes = mergeLanes(
-        currentlyRenderingFiber.lanes,
+      currentlyRenderingFiber[20] = mergeLanes(
+        currentlyRenderingFiber[20],
         deferredLane,
       );
       markSkippedUpdateLanes(deferredLane);
@@ -2936,7 +2936,7 @@ function startTransition<S>(
           console.warn(
             'Detected a large number of updates inside startTransition. ' +
               'If this is due to a subscription please re-write it to use React provided hooks. ' +
-              'Otherwise concurrent mode guarantees are off the table.',
+              'Otherwise concurrent[16] guarantees are off the table.',
           );
         }
       }
@@ -2961,7 +2961,7 @@ export function startHostTransition<F>(
     return;
   }
 
-  if (formFiber.tag !== HostComponent) {
+  if (formFiber[0] !== HostComponent) {
     throw new Error(
       'Expected the form instance to be a HostComponent. This ' +
         'is a bug in React.',
@@ -2997,7 +2997,7 @@ export function startHostTransition<F>(
 }
 
 function ensureFormComponentIsStateful(formFiber: Fiber) {
-  const existingStateHook: Hook | null = formFiber.memoizedState;
+  const existingStateHook: Hook | null = formFiber[14];
   if (existingStateHook !== null) {
     // This fiber was already upgraded to be stateful.
     return existingStateHook;
@@ -3053,12 +3053,12 @@ function ensureFormComponentIsStateful(formFiber: Fiber) {
   };
   stateHook.next = resetStateHook;
 
-  // Add the hook list to both fiber alternates. The idea is that the fiber
+  // Add the hook list to both fiber[22]s. The idea is that the fiber
   // had this hook all along.
-  formFiber.memoizedState = stateHook;
-  const alternate = formFiber.alternate;
+  formFiber[14] = stateHook;
+  const alternate = formFiber[22];
   if (alternate !== null) {
-    alternate.memoizedState = stateHook;
+    alternate[14] = stateHook;
   }
 
   return stateHook;
@@ -3212,9 +3212,9 @@ function refreshCache<T>(fiber: Fiber, seedKey: ?() => T, seedValue: T): void {
   // TODO: Does Cache work in legacy mode? Should decide and write a test.
   // TODO: Consider warning if the refresh is at discrete priority, or if we
   // otherwise suspect that it wasn't batched properly.
-  let provider = fiber.return;
+  let provider = fiber[5];
   while (provider !== null) {
-    switch (provider.tag) {
+    switch (provider[0]) {
       case CacheComponent:
       case HostRoot: {
         // Schedule an update on the cache boundary to trigger a refresh.
@@ -3251,7 +3251,7 @@ function refreshCache<T>(fiber: Fiber, seedKey: ?() => T, seedValue: T): void {
         return;
       }
     }
-    provider = provider.return;
+    provider = provider[5];
   }
   // TODO: Warn if unmounted?
 }
@@ -3324,10 +3324,10 @@ function dispatchSetState<S, A>(
   if (isRenderPhaseUpdate(fiber)) {
     enqueueRenderPhaseUpdate(queue, update);
   } else {
-    const alternate = fiber.alternate;
+    const alternate = fiber[22];
     if (
-      fiber.lanes === NoLanes &&
-      (alternate === null || alternate.lanes === NoLanes)
+      fiber[20] === NoLanes &&
+      (alternate === null || alternate[20] === NoLanes)
     ) {
       // The queue is currently empty, which means we can eagerly compute the
       // next state before entering the render phase. If the new state is the
@@ -3466,7 +3466,7 @@ function dispatchOptimisticSetState<S, A>(
 }
 
 function isRenderPhaseUpdate(fiber: Fiber): boolean {
-  const alternate = fiber.alternate;
+  const alternate = fiber[22];
   return (
     fiber === currentlyRenderingFiber ||
     (alternate !== null && alternate === currentlyRenderingFiber)
@@ -3522,7 +3522,7 @@ function entangleTransitionUpdate<S, A>(
 function markUpdateInDevTools<A>(fiber: Fiber, lane: Lane, action: A): void {
   if (__DEV__) {
     if (enableDebugTracing) {
-      if (fiber.mode & DebugTracingMode) {
+      if (fiber[16] & DebugTracingMode) {
         const name = getComponentNameFromFiber(fiber) || 'Unknown';
         logStateUpdateScheduled(name, lane, action);
       }

@@ -88,7 +88,7 @@ let treeContextOverflow: string = '';
 
 export function isForkedChild(workInProgress: Fiber): boolean {
   warnIfNotHydrating();
-  return (workInProgress.flags & Forked) !== NoFlags;
+  return (workInProgress[17] & Forked) !== NoFlags;
 }
 
 export function getForksAtLevel(workInProgress: Fiber): number {
@@ -208,7 +208,7 @@ export function pushMaterializedTreeId(workInProgress: Fiber) {
 
   // This component materialized an id. This will affect any ids that appear
   // in its children.
-  const returnFiber = workInProgress.return;
+  const returnFiber = workInProgress[5];
   if (returnFiber !== null) {
     const numberOfForks = 1;
     const slotIndex = 0;

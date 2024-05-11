@@ -74,11 +74,11 @@ function removed(indent: number): string {
 }
 
 function describeFiberType(fiber: Fiber): null | string {
-  switch (fiber.tag) {
+  switch (fiber[0]) {
     case HostHoistable:
     case HostSingleton:
     case HostComponent:
-      return fiber.type;
+      return fiber[3];
     case LazyComponent:
       return 'Lazy';
     case SuspenseComponent:
@@ -87,13 +87,13 @@ function describeFiberType(fiber: Fiber): null | string {
       return 'SuspenseList';
     case FunctionComponent:
     case SimpleMemoComponent:
-      const fn = fiber.type;
+      const fn = fiber[3];
       return fn.displayName || fn.name || null;
     case ForwardRef:
-      const render = fiber.type.render;
+      const render = fiber[3].render;
       return render.displayName || render.name || null;
     case ClassComponent:
-      const ctr = fiber.type;
+      const ctr = fiber[3];
       return ctr.displayName || ctr.name || null;
     default:
       // Skip
@@ -511,10 +511,10 @@ function describeSiblingFiber(fiber: Fiber, indent: number): string {
     // Skip this type of fiber. We currently treat this as a fragment
     // so it's just part of the parent's children.
     let flatContent = '';
-    let childFiber = fiber.child;
+    let childFiber = fiber[6];
     while (childFiber) {
       flatContent += describeSiblingFiber(childFiber, indent);
-      childFiber = childFiber.sibling;
+      childFiber = childFiber[7];
     }
     return flatContent;
   }
@@ -532,7 +532,7 @@ function describeNode(node: HydrationDiffNode, indent: number): string {
 
   // Prefix with any server components for context
   let parentContent = '';
-  const debugInfo = node.fiber._debugInfo;
+  const debugInfo = node.fiber[27];
   if (debugInfo) {
     for (let i = 0; i < debugInfo.length; i++) {
       const serverComponentName = debugInfo[i].name;
@@ -549,9 +549,9 @@ function describeNode(node: HydrationDiffNode, indent: number): string {
 
   // We use the pending props since we might be generating a diff before the complete phase
   // when something throws.
-  const clientProps = node.fiber.pendingProps;
+  const clientProps = node.fiber[11];
 
-  if (node.fiber.tag === HostText) {
+  if (node.fiber[0] === HostText) {
     // Text Node
     selfContent = describeTextDiff(clientProps, node.serverProps, indent);
   } else {
@@ -587,7 +587,7 @@ function describeNode(node: HydrationDiffNode, indent: number): string {
 
   // Compute children
   let childContent = '';
-  let childFiber = node.fiber.child;
+  let childFiber = node.fiber[6];
   let diffIdx = 0;
   while (childFiber && diffIdx < node.children.length) {
     const childNode = node.children[diffIdx];
@@ -599,7 +599,7 @@ function describeNode(node: HydrationDiffNode, indent: number): string {
       // This is an unrelated previous sibling.
       childContent += describeSiblingFiber(childFiber, indent);
     }
-    childFiber = childFiber.sibling;
+    childFiber = childFiber[7];
   }
 
   if (childFiber && node.children.length > 0) {

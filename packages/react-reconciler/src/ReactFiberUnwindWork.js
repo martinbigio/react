@@ -70,18 +70,18 @@ function unwindWork(
   // Ideally we would have a special version of the work loop only
   // for hydration.
   popTreeContext(workInProgress);
-  switch (workInProgress.tag) {
+  switch (workInProgress[0]) {
     case ClassComponent: {
-      const Component = workInProgress.type;
+      const Component = workInProgress[3];
       if (isLegacyContextProvider(Component)) {
         popLegacyContext(workInProgress);
       }
-      const flags = workInProgress.flags;
+      const flags = workInProgress[17];
       if (flags & ShouldCapture) {
-        workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
+        workInProgress[17] = (flags & ~ShouldCapture) | DidCapture;
         if (
           enableProfilerTimer &&
-          (workInProgress.mode & ProfileMode) !== NoMode
+          (workInProgress[16] & ProfileMode) !== NoMode
         ) {
           transferActualDuration(workInProgress);
         }
@@ -90,9 +90,9 @@ function unwindWork(
       return null;
     }
     case HostRoot: {
-      const root: FiberRoot = workInProgress.stateNode;
+      const root: FiberRoot = workInProgress[4];
       if (enableCache) {
-        const cache: Cache = workInProgress.memoizedState.cache;
+        const cache: Cache = workInProgress[14].cache;
         popCacheProvider(workInProgress, cache);
       }
 
@@ -103,14 +103,14 @@ function unwindWork(
       popRootTransition(workInProgress, root, renderLanes);
       popHostContainer(workInProgress);
       popTopLevelLegacyContextObject(workInProgress);
-      const flags = workInProgress.flags;
+      const flags = workInProgress[17];
       if (
         (flags & ShouldCapture) !== NoFlags &&
         (flags & DidCapture) === NoFlags
       ) {
         // There was an error during render that wasn't captured by a suspense
         // boundary. Do a second pass on the root to unmount the children.
-        workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
+        workInProgress[17] = (flags & ~ShouldCapture) | DidCapture;
         return workInProgress;
       }
       // We unwound to the root without completing it. Exit.
@@ -125,9 +125,9 @@ function unwindWork(
     }
     case SuspenseComponent: {
       popSuspenseHandler(workInProgress);
-      const suspenseState: null | SuspenseState = workInProgress.memoizedState;
+      const suspenseState: null | SuspenseState = workInProgress[14];
       if (suspenseState !== null && suspenseState.dehydrated !== null) {
-        if (workInProgress.alternate === null) {
+        if (workInProgress[22] === null) {
           throw new Error(
             'Threw in newly mounted dehydrated component. This is likely a bug in ' +
               'React. Please file an issue.',
@@ -137,13 +137,13 @@ function unwindWork(
         resetHydrationState();
       }
 
-      const flags = workInProgress.flags;
+      const flags = workInProgress[17];
       if (flags & ShouldCapture) {
-        workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
+        workInProgress[17] = (flags & ~ShouldCapture) | DidCapture;
         // Captured a suspense effect. Re-render the boundary.
         if (
           enableProfilerTimer &&
-          (workInProgress.mode & ProfileMode) !== NoMode
+          (workInProgress[16] & ProfileMode) !== NoMode
         ) {
           transferActualDuration(workInProgress);
         }
@@ -163,9 +163,9 @@ function unwindWork(
     case ContextProvider:
       let context: ReactContext<any>;
       if (enableRenderableContext) {
-        context = workInProgress.type;
+        context = workInProgress[3];
       } else {
-        context = workInProgress.type._context;
+        context = workInProgress[3]._context;
       }
       popProvider(context, workInProgress);
       return null;
@@ -174,13 +174,13 @@ function unwindWork(
       popSuspenseHandler(workInProgress);
       popHiddenContext(workInProgress);
       popTransition(workInProgress, current);
-      const flags = workInProgress.flags;
+      const flags = workInProgress[17];
       if (flags & ShouldCapture) {
-        workInProgress.flags = (flags & ~ShouldCapture) | DidCapture;
+        workInProgress[17] = (flags & ~ShouldCapture) | DidCapture;
         // Captured a suspense effect. Re-render the boundary.
         if (
           enableProfilerTimer &&
-          (workInProgress.mode & ProfileMode) !== NoMode
+          (workInProgress[16] & ProfileMode) !== NoMode
         ) {
           transferActualDuration(workInProgress);
         }
@@ -190,13 +190,13 @@ function unwindWork(
     }
     case CacheComponent:
       if (enableCache) {
-        const cache: Cache = workInProgress.memoizedState.cache;
+        const cache: Cache = workInProgress[14].cache;
         popCacheProvider(workInProgress, cache);
       }
       return null;
     case TracingMarkerComponent:
       if (enableTransitionTracing) {
-        if (workInProgress.stateNode !== null) {
+        if (workInProgress[4] !== null) {
           popMarkerInstance(workInProgress);
         }
       }
@@ -216,18 +216,18 @@ function unwindInterruptedWork(
   // Ideally we would have a special version of the work loop only
   // for hydration.
   popTreeContext(interruptedWork);
-  switch (interruptedWork.tag) {
+  switch (interruptedWork[0]) {
     case ClassComponent: {
-      const childContextTypes = interruptedWork.type.childContextTypes;
+      const childContextTypes = interruptedWork[3].childContextTypes;
       if (childContextTypes !== null && childContextTypes !== undefined) {
         popLegacyContext(interruptedWork);
       }
       break;
     }
     case HostRoot: {
-      const root: FiberRoot = interruptedWork.stateNode;
+      const root: FiberRoot = interruptedWork[4];
       if (enableCache) {
-        const cache: Cache = interruptedWork.memoizedState.cache;
+        const cache: Cache = interruptedWork[14].cache;
         popCacheProvider(interruptedWork, cache);
       }
 
@@ -258,9 +258,9 @@ function unwindInterruptedWork(
     case ContextProvider:
       let context: ReactContext<any>;
       if (enableRenderableContext) {
-        context = interruptedWork.type;
+        context = interruptedWork[3];
       } else {
-        context = interruptedWork.type._context;
+        context = interruptedWork[3]._context;
       }
       popProvider(context, interruptedWork);
       break;
@@ -272,14 +272,14 @@ function unwindInterruptedWork(
       break;
     case CacheComponent:
       if (enableCache) {
-        const cache: Cache = interruptedWork.memoizedState.cache;
+        const cache: Cache = interruptedWork[14].cache;
         popCacheProvider(interruptedWork, cache);
       }
       break;
     case TracingMarkerComponent:
       if (enableTransitionTracing) {
         const instance: TracingMarkerInstance | null =
-          interruptedWork.stateNode;
+          interruptedWork[4];
         if (instance !== null) {
           popMarkerInstance(interruptedWork);
         }

@@ -111,7 +111,7 @@ function getHostContext(): HostContext {
 
 function pushHostContext(fiber: Fiber): void {
   if (enableAsyncActions) {
-    const stateHook: Hook | null = fiber.memoizedState;
+    const stateHook: Hook | null = fiber[14];
     if (stateHook !== null) {
       // Only provide context if this fiber has been upgraded by a host
       // transition. We use the same optimization for regular host context below.
@@ -120,7 +120,7 @@ function pushHostContext(fiber: Fiber): void {
   }
 
   const context: HostContext = requiredContext(contextStackCursor.current);
-  const nextContext = getChildHostContext(context, fiber.type);
+  const nextContext = getChildHostContext(context, fiber[3]);
 
   // Don't push this Fiber's context unless it's unique.
   if (context !== nextContext) {

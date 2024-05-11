@@ -14,6 +14,6 @@ import type {RootState} from './ReactFiberRoot';
 // in a separate file to break a circular dependency between the renderer and
 // the reconciler.
 export function isRootDehydrated(root: FiberRoot): boolean {
-  const currentState: RootState = root.current.memoizedState;
+  const currentState: RootState = root.current[14];
   return currentState.isDehydrated;
 }

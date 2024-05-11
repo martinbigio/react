@@ -29,27 +29,27 @@ import {currentOwner} from './ReactFiberCurrentOwner';
 export function getNearestMountedFiber(fiber: Fiber): null | Fiber {
   let node = fiber;
   let nearestMounted: null | Fiber = fiber;
-  if (!fiber.alternate) {
+  if (!fiber[22]) {
     // If there is no alternate, this might be a new tree that isn't inserted
     // yet. If it is, then it will have a pending insertion effect on it.
     let nextNode: Fiber = node;
     do {
       node = nextNode;
-      if ((node.flags & (Placement | Hydrating)) !== NoFlags) {
+      if ((node[17] & (Placement | Hydrating)) !== NoFlags) {
         // This is an insertion or in-progress hydration. The nearest possible
         // mounted fiber is the parent but we need to continue to figure out
         // if that one is still mounted.
-        nearestMounted = node.return;
+        nearestMounted = node[5];
       }
       // $FlowFixMe[incompatible-type] we bail out when we get a null
-      nextNode = node.return;
+      nextNode = node[5];
     } while (nextNode);
   } else {
-    while (node.return) {
-      node = node.return;
+    while (node[5]) {
+      node = node[5];
     }
   }
-  if (node.tag === HostRoot) {
+  if (node[0] === HostRoot) {
     // TODO: Check if this was a nested HostRoot when used with
     // renderContainerIntoSubtree.
     return nearestMounted;
@@ -62,12 +62,12 @@ export function getNearestMountedFiber(fiber: Fiber): null | Fiber {
 export function getSuspenseInstanceFromFiber(
   fiber: Fiber,
 ): null | SuspenseInstance {
-  if (fiber.tag === SuspenseComponent) {
-    let suspenseState: SuspenseState | null = fiber.memoizedState;
+  if (fiber[0] === SuspenseComponent) {
+    let suspenseState: SuspenseState | null = fiber[14];
     if (suspenseState === null) {
-      const current = fiber.alternate;
+      const current = fiber[22];
       if (current !== null) {
-        suspenseState = current.memoizedState;
+        suspenseState = current[14];
       }
     }
     if (suspenseState !== null) {
@@ -78,8 +78,8 @@ export function getSuspenseInstanceFromFiber(
 }
 
 export function getContainerFromFiber(fiber: Fiber): null | Container {
-  return fiber.tag === HostRoot
-    ? (fiber.stateNode.containerInfo: Container)
+  return fiber[0] === HostRoot
+    ? (fiber[4].containerInfo: Container)
     : null;
 }
 
@@ -90,9 +90,9 @@ export function isFiberMounted(fiber: Fiber): boolean {
 export function isMounted(component: React$Component<any, any>): boolean {
   if (__DEV__) {
     const owner = currentOwner;
-    if (owner !== null && owner.tag === ClassComponent) {
+    if (owner !== null && owner[0] === ClassComponent) {
       const ownerFiber: Fiber = owner;
-      const instance = ownerFiber.stateNode;
+      const instance = ownerFiber[4];
       if (!instance._warnedAboutRefsInRender) {
         console.error(
           '%s is accessing isMounted inside its render() function. ' +
@@ -121,7 +121,7 @@ function assertIsMounted(fiber: Fiber) {
 }
 
 export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
-  const alternate = fiber.alternate;
+  const alternate = fiber[22];
   if (!alternate) {
     // If there is no alternate, then we only need to check if it is mounted.
     const nearestMounted = getNearestMountedFiber(fiber);
@@ -141,18 +141,18 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
   let a: Fiber = fiber;
   let b: Fiber = alternate;
   while (true) {
-    const parentA = a.return;
+    const parentA = a[5];
     if (parentA === null) {
       // We're at the root.
       break;
     }
-    const parentB = parentA.alternate;
+    const parentB = parentA[22];
     if (parentB === null) {
       // There is no alternate. This is an unusual case. Currently, it only
       // happens when a Suspense component is hidden. An extra fragment fiber
       // is inserted in between the Suspense fiber and its children. Skip
       // over this extra fragment fiber and proceed to the next parent.
-      const nextParent = parentA.return;
+      const nextParent = parentA[5];
       if (nextParent !== null) {
         a = b = nextParent;
         continue;
@@ -163,9 +163,9 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
 
     // If both copies of the parent fiber point to the same child, we can
     // assume that the child is current. This happens when we bailout on low
-    // priority: the bailed out fiber's child reuses the current child.
-    if (parentA.child === parentB.child) {
-      let child = parentA.child;
+    // priority: the bailed out fiber's child reuses the current[6].
+    if (parentA[6] === parentB[6]) {
+      let child = parentA[6];
       while (child) {
         if (child === a) {
           // We've determined that A is the current branch.
@@ -177,7 +177,7 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
           assertIsMounted(parentA);
           return alternate;
         }
-        child = child.sibling;
+        child = child[7];
       }
 
       // We should never have an alternate for any mounting node. So the only
@@ -185,7 +185,7 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
       throw new Error('Unable to find node on an unmounted component.');
     }
 
-    if (a.return !== b.return) {
+    if (a[5] !== b[5]) {
       // The return pointer of A and the return pointer of B point to different
       // fibers. We assume that return pointers never criss-cross, so A must
       // belong to the child set of A.return, and B must belong to the child
@@ -199,7 +199,7 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
       //
       // Search parent A's child set
       let didFindChild = false;
-      let child = parentA.child;
+      let child = parentA[6];
       while (child) {
         if (child === a) {
           didFindChild = true;
@@ -213,11 +213,11 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
           a = parentB;
           break;
         }
-        child = child.sibling;
+        child = child[7];
       }
       if (!didFindChild) {
         // Search parent B's child set
-        child = parentB.child;
+        child = parentB[6];
         while (child) {
           if (child === a) {
             didFindChild = true;
@@ -231,7 +231,7 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
             a = parentA;
             break;
           }
-          child = child.sibling;
+          child = child[7];
         }
 
         if (!didFindChild) {
@@ -243,7 +243,7 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
       }
     }
 
-    if (a.alternate !== b) {
+    if (a[22] !== b) {
       throw new Error(
         "Return fibers should always be each others' alternates. " +
           'This error is likely caused by a bug in React. Please file an issue.',
@@ -253,11 +253,11 @@ export function findCurrentFiberUsingSlowPath(fiber: Fiber): Fiber | null {
 
   // If the root is not a host container, we're in a disconnected tree. I.e.
   // unmounted.
-  if (a.tag !== HostRoot) {
+  if (a[0] !== HostRoot) {
     throw new Error('Unable to find node on an unmounted component.');
   }
 
-  if (a.stateNode.current === a) {
+  if (a[4].current === a) {
     // We've determined that A is the current branch.
     return fiber;
   }
@@ -274,7 +274,7 @@ export function findCurrentHostFiber(parent: Fiber): Fiber | null {
 
 function findCurrentHostFiberImpl(node: Fiber): Fiber | null {
   // Next we'll drill down this component to find the first HostComponent/Text.
-  const tag = node.tag;
+  const tag = node[0];
   if (
     tag === HostComponent ||
     tag === HostHoistable ||
@@ -284,13 +284,13 @@ function findCurrentHostFiberImpl(node: Fiber): Fiber | null {
     return node;
   }
 
-  let child = node.child;
+  let child = node[6];
   while (child !== null) {
     const match = findCurrentHostFiberImpl(child);
     if (match !== null) {
       return match;
     }
-    child = child.sibling;
+    child = child[7];
   }
 
   return null;
@@ -305,7 +305,7 @@ export function findCurrentHostFiberWithNoPortals(parent: Fiber): Fiber | null {
 
 function findCurrentHostFiberWithNoPortalsImpl(node: Fiber): Fiber | null {
   // Next we'll drill down this component to find the first HostComponent/Text.
-  const tag = node.tag;
+  const tag = node[0];
   if (
     tag === HostComponent ||
     tag === HostHoistable ||
@@ -315,24 +315,24 @@ function findCurrentHostFiberWithNoPortalsImpl(node: Fiber): Fiber | null {
     return node;
   }
 
-  let child = node.child;
+  let child = node[6];
   while (child !== null) {
-    if (child.tag !== HostPortal) {
+    if (child[0] !== HostPortal) {
       const match = findCurrentHostFiberWithNoPortalsImpl(child);
       if (match !== null) {
         return match;
       }
     }
-    child = child.sibling;
+    child = child[7];
   }
 
   return null;
 }
 
 export function isFiberSuspenseAndTimedOut(fiber: Fiber): boolean {
-  const memoizedState = fiber.memoizedState;
+  const memoizedState = fiber[14];
   return (
-    fiber.tag === SuspenseComponent &&
+    fiber[0] === SuspenseComponent &&
     memoizedState !== null &&
     memoizedState.dehydrated === null
   );
@@ -343,12 +343,12 @@ export function doesFiberContain(
   childFiber: Fiber,
 ): boolean {
   let node: null | Fiber = childFiber;
-  const parentFiberAlternate = parentFiber.alternate;
+  const parentFiberAlternate = parentFiber[22];
   while (node !== null) {
     if (node === parentFiber || node === parentFiberAlternate) {
       return true;
     }
-    node = node.return;
+    node = node[5];
   }
   return false;
 }

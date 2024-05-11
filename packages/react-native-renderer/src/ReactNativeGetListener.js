@@ -15,7 +15,7 @@ export default function getListener(
   inst: Fiber,
   registrationName: string,
 ): Function | null {
-  const stateNode = inst.stateNode;
+  const stateNode = inst[4];
   if (stateNode === null) {
     // Work in progress (ex: onload events in incremental mode).
     return null;

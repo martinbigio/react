@@ -177,17 +177,17 @@ export function scheduleContextWorkOnParentPath(
   // Update the child lanes of all the ancestors, including the alternates.
   let node = parent;
   while (node !== null) {
-    const alternate = node.alternate;
-    if (!isSubsetOfLanes(node.childLanes, renderLanes)) {
-      node.childLanes = mergeLanes(node.childLanes, renderLanes);
+    const alternate = node[22];
+    if (!isSubsetOfLanes(node[21], renderLanes)) {
+      node[21] = mergeLanes(node[21], renderLanes);
       if (alternate !== null) {
-        alternate.childLanes = mergeLanes(alternate.childLanes, renderLanes);
+        alternate[21] = mergeLanes(alternate[21], renderLanes);
       }
     } else if (
       alternate !== null &&
-      !isSubsetOfLanes(alternate.childLanes, renderLanes)
+      !isSubsetOfLanes(alternate[21], renderLanes)
     ) {
-      alternate.childLanes = mergeLanes(alternate.childLanes, renderLanes);
+      alternate[21] = mergeLanes(alternate[21], renderLanes);
     } else {
       // Neither alternate was updated.
       // Normally, this would mean that the rest of the
@@ -199,7 +199,7 @@ export function scheduleContextWorkOnParentPath(
     if (node === propagationRoot) {
       break;
     }
-    node = node.return;
+    node = node[5];
   }
   if (__DEV__) {
     if (node !== propagationRoot) {
@@ -241,25 +241,25 @@ function propagateContextChange_eager<T>(
   if (enableLazyContextPropagation) {
     return;
   }
-  let fiber = workInProgress.child;
+  let fiber = workInProgress[6];
   if (fiber !== null) {
     // Set the return pointer of the child to the work-in-progress fiber.
-    fiber.return = workInProgress;
+    fiber[5] = workInProgress;
   }
   while (fiber !== null) {
     let nextFiber;
 
     // Visit this fiber.
-    const list = fiber.dependencies;
+    const list = fiber[15];
     if (list !== null) {
-      nextFiber = fiber.child;
+      nextFiber = fiber[6];
 
       let dependency = list.firstContext;
       while (dependency !== null) {
         // Check if the context matches.
         if (dependency.context === context) {
           // Match! Schedule an update on this fiber.
-          if (fiber.tag === ClassComponent) {
+          if (fiber[0] === ClassComponent) {
             // Schedule a force update on the work-in-progress.
             const lane = pickArbitraryLane(renderLanes);
             const update = createUpdate(lane);
@@ -270,7 +270,7 @@ function propagateContextChange_eager<T>(
             // worth fixing.
 
             // Inlined `enqueueUpdate` to remove interleaved update check
-            const updateQueue = fiber.updateQueue;
+            const updateQueue = fiber[13];
             if (updateQueue === null) {
               // Only occurs if the fiber has been unmounted.
             } else {
@@ -287,13 +287,13 @@ function propagateContextChange_eager<T>(
             }
           }
 
-          fiber.lanes = mergeLanes(fiber.lanes, renderLanes);
-          const alternate = fiber.alternate;
+          fiber[20] = mergeLanes(fiber[20], renderLanes);
+          const alternate = fiber[22];
           if (alternate !== null) {
-            alternate.lanes = mergeLanes(alternate.lanes, renderLanes);
+            alternate[20] = mergeLanes(alternate[20], renderLanes);
           }
           scheduleContextWorkOnParentPath(
-            fiber.return,
+            fiber[5],
             renderLanes,
             workInProgress,
           );
@@ -307,14 +307,14 @@ function propagateContextChange_eager<T>(
         }
         dependency = dependency.next;
       }
-    } else if (fiber.tag === ContextProvider) {
+    } else if (fiber[0] === ContextProvider) {
       // Don't scan deeper if this is a matching provider
-      nextFiber = fiber.type === workInProgress.type ? null : fiber.child;
-    } else if (fiber.tag === DehydratedFragment) {
+      nextFiber = fiber[3] === workInProgress[3] ? null : fiber[6];
+    } else if (fiber[0] === DehydratedFragment) {
       // If a dehydrated suspense boundary is in this subtree, we don't know
       // if it will have any context consumers in it. The best we can do is
       // mark it as having updates.
-      const parentSuspense = fiber.return;
+      const parentSuspense = fiber[5];
 
       if (parentSuspense === null) {
         throw new Error(
@@ -322,10 +322,10 @@ function propagateContextChange_eager<T>(
         );
       }
 
-      parentSuspense.lanes = mergeLanes(parentSuspense.lanes, renderLanes);
-      const alternate = parentSuspense.alternate;
+      parentSuspense[20] = mergeLanes(parentSuspense[20], renderLanes);
+      const alternate = parentSuspense[22];
       if (alternate !== null) {
-        alternate.lanes = mergeLanes(alternate.lanes, renderLanes);
+        alternate[20] = mergeLanes(alternate[20], renderLanes);
       }
       // This is intentionally passing this fiber as the parent
       // because we want to schedule this fiber as having work
@@ -336,15 +336,15 @@ function propagateContextChange_eager<T>(
         renderLanes,
         workInProgress,
       );
-      nextFiber = fiber.sibling;
+      nextFiber = fiber[7];
     } else {
       // Traverse down.
-      nextFiber = fiber.child;
+      nextFiber = fiber[6];
     }
 
     if (nextFiber !== null) {
       // Set the return pointer of the child to the work-in-progress fiber.
-      nextFiber.return = fiber;
+      nextFiber[5] = fiber;
     } else {
       // No child. Traverse to next sibling.
       nextFiber = fiber;
@@ -354,15 +354,15 @@ function propagateContextChange_eager<T>(
           nextFiber = null;
           break;
         }
-        const sibling = nextFiber.sibling;
+        const sibling = nextFiber[7];
         if (sibling !== null) {
           // Set the return pointer of the sibling to the work-in-progress fiber.
-          sibling.return = nextFiber.return;
+          sibling[5] = nextFiber[5];
           nextFiber = sibling;
           break;
         }
         // No more siblings. Traverse up.
-        nextFiber = nextFiber.return;
+        nextFiber = nextFiber[5];
       }
     }
     fiber = nextFiber;
@@ -379,18 +379,18 @@ function propagateContextChanges<T>(
   if (!enableLazyContextPropagation) {
     return;
   }
-  let fiber = workInProgress.child;
+  let fiber = workInProgress[6];
   if (fiber !== null) {
     // Set the return pointer of the child to the work-in-progress fiber.
-    fiber.return = workInProgress;
+    fiber[5] = workInProgress;
   }
   while (fiber !== null) {
     let nextFiber;
 
     // Visit this fiber.
-    const list = fiber.dependencies;
+    const list = fiber[15];
     if (list !== null) {
-      nextFiber = fiber.child;
+      nextFiber = fiber[6];
 
       let dep = list.firstContext;
       findChangedDep: while (dep !== null) {
@@ -411,13 +411,13 @@ function propagateContextChanges<T>(
             // could add back a dirty flag as an optimization to avoid double
             // checking, but until we have selectors it's not really worth
             // the trouble.
-            consumer.lanes = mergeLanes(consumer.lanes, renderLanes);
-            const alternate = consumer.alternate;
+            consumer[20] = mergeLanes(consumer[20], renderLanes);
+            const alternate = consumer[22];
             if (alternate !== null) {
-              alternate.lanes = mergeLanes(alternate.lanes, renderLanes);
+              alternate[20] = mergeLanes(alternate[20], renderLanes);
             }
             scheduleContextWorkOnParentPath(
-              consumer.return,
+              consumer[5],
               renderLanes,
               workInProgress,
             );
@@ -437,11 +437,11 @@ function propagateContextChanges<T>(
         }
         dep = dependency.next;
       }
-    } else if (fiber.tag === DehydratedFragment) {
+    } else if (fiber[0] === DehydratedFragment) {
       // If a dehydrated suspense boundary is in this subtree, we don't know
       // if it will have any context consumers in it. The best we can do is
       // mark it as having updates.
-      const parentSuspense = fiber.return;
+      const parentSuspense = fiber[5];
 
       if (parentSuspense === null) {
         throw new Error(
@@ -449,10 +449,10 @@ function propagateContextChanges<T>(
         );
       }
 
-      parentSuspense.lanes = mergeLanes(parentSuspense.lanes, renderLanes);
-      const alternate = parentSuspense.alternate;
+      parentSuspense[20] = mergeLanes(parentSuspense[20], renderLanes);
+      const alternate = parentSuspense[22];
       if (alternate !== null) {
-        alternate.lanes = mergeLanes(alternate.lanes, renderLanes);
+        alternate[20] = mergeLanes(alternate[20], renderLanes);
       }
       // This is intentionally passing this fiber as the parent
       // because we want to schedule this fiber as having work
@@ -466,12 +466,12 @@ function propagateContextChanges<T>(
       nextFiber = null;
     } else {
       // Traverse down.
-      nextFiber = fiber.child;
+      nextFiber = fiber[6];
     }
 
     if (nextFiber !== null) {
       // Set the return pointer of the child to the work-in-progress fiber.
-      nextFiber.return = fiber;
+      nextFiber[5] = fiber;
     } else {
       // No child. Traverse to next sibling.
       nextFiber = fiber;
@@ -481,15 +481,15 @@ function propagateContextChanges<T>(
           nextFiber = null;
           break;
         }
-        const sibling = nextFiber.sibling;
+        const sibling = nextFiber[7];
         if (sibling !== null) {
           // Set the return pointer of the sibling to the work-in-progress fiber.
-          sibling.return = nextFiber.return;
+          sibling[5] = nextFiber[5];
           nextFiber = sibling;
           break;
         }
         // No more siblings. Traverse up.
-        nextFiber = nextFiber.return;
+        nextFiber = nextFiber[5];
       }
     }
     fiber = nextFiber;
@@ -545,30 +545,30 @@ function propagateParentContextChanges(
   let isInsidePropagationBailout = false;
   while (parent !== null) {
     if (!isInsidePropagationBailout) {
-      if ((parent.flags & NeedsPropagation) !== NoFlags) {
+      if ((parent[17] & NeedsPropagation) !== NoFlags) {
         isInsidePropagationBailout = true;
-      } else if ((parent.flags & DidPropagateContext) !== NoFlags) {
+      } else if ((parent[17] & DidPropagateContext) !== NoFlags) {
         break;
       }
     }
 
-    if (parent.tag === ContextProvider) {
-      const currentParent = parent.alternate;
+    if (parent[0] === ContextProvider) {
+      const currentParent = parent[22];
 
       if (currentParent === null) {
         throw new Error('Should have a current fiber. This is a bug in React.');
       }
 
-      const oldProps = currentParent.memoizedProps;
+      const oldProps = currentParent[12];
       if (oldProps !== null) {
         let context: ReactContext<any>;
         if (enableRenderableContext) {
-          context = parent.type;
+          context = parent[3];
         } else {
-          context = parent.type._context;
+          context = parent[3]._context;
         }
 
-        const newProps = parent.pendingProps;
+        const newProps = parent[11];
         const newValue = newProps.value;
 
         const oldValue = oldProps.value;
@@ -584,15 +584,15 @@ function propagateParentContextChanges(
     } else if (enableAsyncActions && parent === getHostTransitionProvider()) {
       // During a host transition, a host component can act like a context
       // provider. E.g. in React DOM, this would be a <form />.
-      const currentParent = parent.alternate;
+      const currentParent = parent[22];
       if (currentParent === null) {
         throw new Error('Should have a current fiber. This is a bug in React.');
       }
 
-      const oldStateHook: Hook = currentParent.memoizedState;
+      const oldStateHook: Hook = currentParent[14];
       const oldState: TransitionStatus = oldStateHook.memoizedState;
 
-      const newStateHook: Hook = parent.memoizedState;
+      const newStateHook: Hook = parent[14];
       const newState: TransitionStatus = newStateHook.memoizedState;
 
       // This uses regular equality instead of Object.is because we assume that
@@ -605,7 +605,7 @@ function propagateParentContextChanges(
         }
       }
     }
-    parent = parent.return;
+    parent = parent[5];
   }
 
   if (contexts !== null) {
@@ -638,7 +638,7 @@ function propagateParentContextChanges(
   // If we could instead bail out before entering the siblings' begin phase,
   // then we could remove both `DidPropagateContext` and `NeedsPropagation`.
   // Consider this as part of the next refactor to the fiber tree structure.
-  workInProgress.flags |= DidPropagateContext;
+  workInProgress[17] |= DidPropagateContext;
 }
 
 export function checkIfContextChanged(
@@ -675,7 +675,7 @@ export function prepareToReadContext(
   lastContextDependency = null;
   lastFullyObservedContext = null;
 
-  const dependencies = workInProgress.dependencies;
+  const dependencies = workInProgress[15];
   if (dependencies !== null) {
     if (enableLazyContextPropagation) {
       // Reset the work-in-progress list
@@ -750,12 +750,12 @@ function readContextForConsumer<T>(
 
       // This is the first dependency for this component. Create a new list.
       lastContextDependency = contextItem;
-      consumer.dependencies = {
+      consumer[15] = {
         lanes: NoLanes,
         firstContext: contextItem,
       };
       if (enableLazyContextPropagation) {
-        consumer.flags |= NeedsPropagation;
+        consumer[17] |= NeedsPropagation;
       }
     } else {
       // Append a new context item.

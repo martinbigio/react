@@ -32,19 +32,19 @@ export function findHostInstance_DEPRECATED<TElementType: ElementType>(
 ): ?ElementRef<HostComponent<mixed>> {
   if (__DEV__) {
     const owner = currentOwner;
-    if (owner !== null && owner.stateNode !== null) {
-      if (!owner.stateNode._warnedAboutRefsInRender) {
+    if (owner !== null && owner[4] !== null) {
+      if (!owner[4]._warnedAboutRefsInRender) {
         console.error(
           '%s is accessing findNodeHandle inside its render(). ' +
             'render() should be a pure function of props and state. It should ' +
             'never access something that requires stale data from the previous ' +
             'render, such as refs. Move this logic to componentDidMount and ' +
             'componentDidUpdate instead.',
-          getComponentNameFromType(owner.type) || 'A component',
+          getComponentNameFromType(owner[3]) || 'A component',
         );
       }
 
-      owner.stateNode._warnedAboutRefsInRender = true;
+      owner[4]._warnedAboutRefsInRender = true;
     }
   }
 
@@ -87,19 +87,19 @@ export function findHostInstance_DEPRECATED<TElementType: ElementType>(
 export function findNodeHandle(componentOrHandle: any): ?number {
   if (__DEV__) {
     const owner = currentOwner;
-    if (owner !== null && owner.stateNode !== null) {
-      if (!owner.stateNode._warnedAboutRefsInRender) {
+    if (owner !== null && owner[4] !== null) {
+      if (!owner[4]._warnedAboutRefsInRender) {
         console.error(
           '%s is accessing findNodeHandle inside its render(). ' +
             'render() should be a pure function of props and state. It should ' +
             'never access something that requires stale data from the previous ' +
             'render, such as refs. Move this logic to componentDidMount and ' +
             'componentDidUpdate instead.',
-          getComponentNameFromType(owner.type) || 'A component',
+          getComponentNameFromType(owner[3]) || 'A component',
         );
       }
 
-      owner.stateNode._warnedAboutRefsInRender = true;
+      owner[4]._warnedAboutRefsInRender = true;
     }
   }
 

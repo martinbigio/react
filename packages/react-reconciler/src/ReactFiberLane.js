@@ -293,7 +293,7 @@ export function getEntangledLanes(root: FiberRoot, renderLanes: Lanes): Lanes {
 
   if (
     allowConcurrentByDefault &&
-    (root.current.mode & ConcurrentUpdatesByDefaultMode) !== NoMode
+    (root.current[16] & ConcurrentUpdatesByDefaultMode) !== NoMode
   ) {
     // Do nothing, use the lanes as they were assigned.
   } else if ((entangledLanes & InputContinuousLane) !== NoLanes) {
@@ -504,7 +504,7 @@ export function includesOnlyTransitions(lanes: Lanes): boolean {
 export function includesBlockingLane(root: FiberRoot, lanes: Lanes): boolean {
   if (
     allowConcurrentByDefault &&
-    (root.current.mode & ConcurrentUpdatesByDefaultMode) !== NoMode
+    (root.current[16] & ConcurrentUpdatesByDefaultMode) !== NoMode
   ) {
     // Concurrent updates by default always use time slicing.
     return false;
@@ -921,7 +921,7 @@ export function movePendingFibersToMemoized(root: FiberRoot, lanes: Lanes) {
     const updaters = pendingUpdatersLaneMap[index];
     if (updaters.size > 0) {
       updaters.forEach(fiber => {
-        const alternate = fiber.alternate;
+        const alternate = fiber[22];
         if (alternate === null || !memoizedUpdaters.has(alternate)) {
           memoizedUpdaters.add(fiber);
         }

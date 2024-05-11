@@ -262,7 +262,7 @@ export function isFunctionClassComponent(
 
 // This is used to create an alternate fiber to do work on.
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
-  let workInProgress = current.alternate;
+  let workInProgress = current[22];
   if (workInProgress === null) {
     // We use a double buffering pooling technique because we know that we'll
     // only ever need at most two versions of a tree. We pool the "other" unused
@@ -270,62 +270,62 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
     // extra objects for things that are never updated. It also allow us to
     // reclaim the extra memory if needed.
     workInProgress = createFiber(
-      current.tag,
+      current[0],
       pendingProps,
-      current.key,
-      current.mode,
+      current[1],
+      current[16],
     );
-    workInProgress.elementType = current.elementType;
-    workInProgress.type = current.type;
-    workInProgress.stateNode = current.stateNode;
+    workInProgress[2] = current[2];
+    workInProgress[3] = current[3];
+    workInProgress[4] = current[4];
 
     if (__DEV__) {
       // DEV-only fields
 
-      workInProgress._debugOwner = current._debugOwner;
-      workInProgress._debugHookTypes = current._debugHookTypes;
+      workInProgress[28] = current[28];
+      workInProgress[31] = current[31];
     }
 
-    workInProgress.alternate = current;
-    current.alternate = workInProgress;
+    workInProgress[22] = current;
+    current[22] = workInProgress;
   } else {
-    workInProgress.pendingProps = pendingProps;
+    workInProgress[11] = pendingProps;
     // Needed because Blocks store data on type.
-    workInProgress.type = current.type;
+    workInProgress[3] = current[3];
 
     // We already have an alternate.
     // Reset the effect tag.
-    workInProgress.flags = NoFlags;
+    workInProgress[17] = NoFlags;
 
     // The effects are no longer valid.
-    workInProgress.subtreeFlags = NoFlags;
-    workInProgress.deletions = null;
+    workInProgress[18] = NoFlags;
+    workInProgress[19] = null;
 
     if (enableProfilerTimer) {
       // We intentionally reset, rather than copy, actualDuration & actualStartTime.
       // This prevents time from endlessly accumulating in new commits.
       // This has the downside of resetting values for different priority renders,
       // But works for yielding (the common case) and should support resuming.
-      workInProgress.actualDuration = 0;
-      workInProgress.actualStartTime = -1;
+      workInProgress[23] = 0;
+      workInProgress[24] = -1;
     }
   }
 
   // Reset all effects except static ones.
   // Static effects are not specific to a render.
-  workInProgress.flags = current.flags & StaticMask;
-  workInProgress.childLanes = current.childLanes;
-  workInProgress.lanes = current.lanes;
+  workInProgress[17] = current[17] & StaticMask;
+  workInProgress[21] = current[21];
+  workInProgress[20] = current[20];
 
-  workInProgress.child = current.child;
-  workInProgress.memoizedProps = current.memoizedProps;
-  workInProgress.memoizedState = current.memoizedState;
-  workInProgress.updateQueue = current.updateQueue;
+  workInProgress[6] = current[6];
+  workInProgress[12] = current[12];
+  workInProgress[14] = current[14];
+  workInProgress[13] = current[13];
 
   // Clone the dependencies object. This is mutated during the render phase, so
   // it cannot be shared with the current fiber.
-  const currentDependencies = current.dependencies;
-  workInProgress.dependencies =
+  const currentDependencies = current[15];
+  workInProgress[15] =
     currentDependencies === null
       ? null
       : {
@@ -334,29 +334,29 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
         };
 
   // These will be overridden during the parent's reconciliation
-  workInProgress.sibling = current.sibling;
-  workInProgress.index = current.index;
-  workInProgress.ref = current.ref;
-  workInProgress.refCleanup = current.refCleanup;
+  workInProgress[7] = current[7];
+  workInProgress[8] = current[8];
+  workInProgress[9] = current[9];
+  workInProgress[10] = current[10];
 
   if (enableProfilerTimer) {
-    workInProgress.selfBaseDuration = current.selfBaseDuration;
-    workInProgress.treeBaseDuration = current.treeBaseDuration;
+    workInProgress[25] = current[25];
+    workInProgress[26] = current[26];
   }
 
   if (__DEV__) {
-    workInProgress._debugInfo = current._debugInfo;
-    workInProgress._debugNeedsRemount = current._debugNeedsRemount;
-    switch (workInProgress.tag) {
+    workInProgress[27] = current[27];
+    workInProgress[30] = current[30];
+    switch (workInProgress[0]) {
       case FunctionComponent:
       case SimpleMemoComponent:
-        workInProgress.type = resolveFunctionForHotReloading(current.type);
+        workInProgress[3] = resolveFunctionForHotReloading(current[3]);
         break;
       case ClassComponent:
-        workInProgress.type = resolveClassForHotReloading(current.type);
+        workInProgress[3] = resolveClassForHotReloading(current[3]);
         break;
       case ForwardRef:
-        workInProgress.type = resolveForwardRefForHotReloading(current.type);
+        workInProgress[3] = resolveForwardRefForHotReloading(current[3]);
         break;
       default:
         break;
@@ -381,50 +381,50 @@ export function resetWorkInProgress(
 
   // Reset the effect flags but keep any Placement tags, since that's something
   // that child fiber is setting, not the reconciliation.
-  workInProgress.flags &= StaticMask | Placement;
+  workInProgress[17] &= StaticMask | Placement;
 
   // The effects are no longer valid.
 
-  const current = workInProgress.alternate;
+  const current = workInProgress[22];
   if (current === null) {
     // Reset to createFiber's initial values.
-    workInProgress.childLanes = NoLanes;
-    workInProgress.lanes = renderLanes;
+    workInProgress[21] = NoLanes;
+    workInProgress[20] = renderLanes;
 
-    workInProgress.child = null;
-    workInProgress.subtreeFlags = NoFlags;
-    workInProgress.memoizedProps = null;
-    workInProgress.memoizedState = null;
-    workInProgress.updateQueue = null;
+    workInProgress[6] = null;
+    workInProgress[18] = NoFlags;
+    workInProgress[12] = null;
+    workInProgress[14] = null;
+    workInProgress[13] = null;
 
-    workInProgress.dependencies = null;
+    workInProgress[15] = null;
 
-    workInProgress.stateNode = null;
+    workInProgress[4] = null;
 
     if (enableProfilerTimer) {
       // Note: We don't reset the actualTime counts. It's useful to accumulate
       // actual time across multiple render passes.
-      workInProgress.selfBaseDuration = 0;
-      workInProgress.treeBaseDuration = 0;
+      workInProgress[25] = 0;
+      workInProgress[26] = 0;
     }
   } else {
     // Reset to the cloned values that createWorkInProgress would've.
-    workInProgress.childLanes = current.childLanes;
-    workInProgress.lanes = current.lanes;
+    workInProgress[21] = current[21];
+    workInProgress[20] = current[20];
 
-    workInProgress.child = current.child;
-    workInProgress.subtreeFlags = NoFlags;
-    workInProgress.deletions = null;
-    workInProgress.memoizedProps = current.memoizedProps;
-    workInProgress.memoizedState = current.memoizedState;
-    workInProgress.updateQueue = current.updateQueue;
+    workInProgress[6] = current[6];
+    workInProgress[18] = NoFlags;
+    workInProgress[19] = null;
+    workInProgress[12] = current[12];
+    workInProgress[14] = current[14];
+    workInProgress[13] = current[13];
     // Needed because Blocks store data on type.
-    workInProgress.type = current.type;
+    workInProgress[3] = current[3];
 
     // Clone the dependencies object. This is mutated during the render phase, so
     // it cannot be shared with the current fiber.
-    const currentDependencies = current.dependencies;
-    workInProgress.dependencies =
+    const currentDependencies = current[15];
+    workInProgress[15] =
       currentDependencies === null
         ? null
         : {
@@ -435,8 +435,8 @@ export function resetWorkInProgress(
     if (enableProfilerTimer) {
       // Note: We don't reset the actualTime counts. It's useful to accumulate
       // actual time across multiple render passes.
-      workInProgress.selfBaseDuration = current.selfBaseDuration;
-      workInProgress.treeBaseDuration = current.treeBaseDuration;
+      workInProgress[25] = current[25];
+      workInProgress[26] = current[26];
     }
   }
 
@@ -635,12 +635,12 @@ export function createFiberFromTypeAndProps(
   }
 
   const fiber = createFiber(fiberTag, pendingProps, key, mode);
-  fiber.elementType = type;
-  fiber.type = resolvedType;
-  fiber.lanes = lanes;
+  fiber[2] = type;
+  fiber[3] = resolvedType;
+  fiber[20] = lanes;
 
   if (__DEV__) {
-    fiber._debugOwner = owner;
+    fiber[28] = owner;
   }
 
   return fiber;
@@ -667,7 +667,7 @@ export function createFiberFromElement(
     lanes,
   );
   if (__DEV__) {
-    fiber._debugOwner = element._owner;
+    fiber[28] = element._owner;
   }
   return fiber;
 }
@@ -679,7 +679,7 @@ export function createFiberFromFragment(
   key: null | string,
 ): Fiber {
   const fiber = createFiber(Fragment, elements, key, mode);
-  fiber.lanes = lanes;
+  fiber[20] = lanes;
   return fiber;
 }
 
@@ -691,9 +691,9 @@ function createFiberFromScope(
   key: null | string,
 ) {
   const fiber = createFiber(ScopeComponent, pendingProps, key, mode);
-  fiber.type = scope;
-  fiber.elementType = scope;
-  fiber.lanes = lanes;
+  fiber[3] = scope;
+  fiber[2] = scope;
+  fiber[20] = lanes;
   return fiber;
 }
 
@@ -713,11 +713,11 @@ function createFiberFromProfiler(
   }
 
   const fiber = createFiber(Profiler, pendingProps, key, mode | ProfileMode);
-  fiber.elementType = REACT_PROFILER_TYPE;
-  fiber.lanes = lanes;
+  fiber[2] = REACT_PROFILER_TYPE;
+  fiber[20] = lanes;
 
   if (enableProfilerTimer) {
-    fiber.stateNode = {
+    fiber[4] = {
       effectDuration: 0,
       passiveEffectDuration: 0,
     };
@@ -733,8 +733,8 @@ export function createFiberFromSuspense(
   key: null | string,
 ): Fiber {
   const fiber = createFiber(SuspenseComponent, pendingProps, key, mode);
-  fiber.elementType = REACT_SUSPENSE_TYPE;
-  fiber.lanes = lanes;
+  fiber[2] = REACT_SUSPENSE_TYPE;
+  fiber[20] = lanes;
   return fiber;
 }
 
@@ -745,8 +745,8 @@ export function createFiberFromSuspenseList(
   key: null | string,
 ): Fiber {
   const fiber = createFiber(SuspenseListComponent, pendingProps, key, mode);
-  fiber.elementType = REACT_SUSPENSE_LIST_TYPE;
-  fiber.lanes = lanes;
+  fiber[2] = REACT_SUSPENSE_LIST_TYPE;
+  fiber[20] = lanes;
   return fiber;
 }
 
@@ -757,8 +757,8 @@ export function createFiberFromOffscreen(
   key: null | string,
 ): Fiber {
   const fiber = createFiber(OffscreenComponent, pendingProps, key, mode);
-  fiber.elementType = REACT_OFFSCREEN_TYPE;
-  fiber.lanes = lanes;
+  fiber[2] = REACT_OFFSCREEN_TYPE;
+  fiber[20] = lanes;
   const primaryChildInstance: OffscreenInstance = {
     _visibility: OffscreenVisible,
     _pendingVisibility: OffscreenVisible,
@@ -769,7 +769,7 @@ export function createFiberFromOffscreen(
     detach: () => detachOffscreenInstance(primaryChildInstance),
     attach: () => attachOffscreenInstance(primaryChildInstance),
   };
-  fiber.stateNode = primaryChildInstance;
+  fiber[4] = primaryChildInstance;
   return fiber;
 }
 
@@ -780,8 +780,8 @@ export function createFiberFromLegacyHidden(
   key: null | string,
 ): Fiber {
   const fiber = createFiber(LegacyHiddenComponent, pendingProps, key, mode);
-  fiber.elementType = REACT_LEGACY_HIDDEN_TYPE;
-  fiber.lanes = lanes;
+  fiber[2] = REACT_LEGACY_HIDDEN_TYPE;
+  fiber[20] = lanes;
   // Adding a stateNode for legacy hidden because it's currently using
   // the offscreen implementation, which depends on a state node
   const instance: OffscreenInstance = {
@@ -794,7 +794,7 @@ export function createFiberFromLegacyHidden(
     detach: () => detachOffscreenInstance(instance),
     attach: () => attachOffscreenInstance(instance),
   };
-  fiber.stateNode = instance;
+  fiber[4] = instance;
   return fiber;
 }
 
@@ -805,8 +805,8 @@ export function createFiberFromTracingMarker(
   key: null | string,
 ): Fiber {
   const fiber = createFiber(TracingMarkerComponent, pendingProps, key, mode);
-  fiber.elementType = REACT_TRACING_MARKER_TYPE;
-  fiber.lanes = lanes;
+  fiber[2] = REACT_TRACING_MARKER_TYPE;
+  fiber[20] = lanes;
   const tracingMarkerInstance: TracingMarkerInstance = {
     tag: TransitionTracingMarker,
     transitions: null,
@@ -814,7 +814,7 @@ export function createFiberFromTracingMarker(
     aborts: null,
     name: pendingProps.name,
   };
-  fiber.stateNode = tracingMarkerInstance;
+  fiber[4] = tracingMarkerInstance;
   return fiber;
 }
 
@@ -824,7 +824,7 @@ export function createFiberFromText(
   lanes: Lanes,
 ): Fiber {
   const fiber = createFiber(HostText, content, null, mode);
-  fiber.lanes = lanes;
+  fiber[20] = lanes;
   return fiber;
 }
 
@@ -832,7 +832,7 @@ export function createFiberFromDehydratedFragment(
   dehydratedNode: SuspenseInstance,
 ): Fiber {
   const fiber = createFiber(DehydratedFragment, null, null, NoMode);
-  fiber.stateNode = dehydratedNode;
+  fiber[4] = dehydratedNode;
   return fiber;
 }
 
@@ -843,8 +843,8 @@ export function createFiberFromPortal(
 ): Fiber {
   const pendingProps = portal.children !== null ? portal.children : [];
   const fiber = createFiber(HostPortal, pendingProps, portal.key, mode);
-  fiber.lanes = lanes;
-  fiber.stateNode = {
+  fiber[20] = lanes;
+  fiber[4] = {
     containerInfo: portal.containerInfo,
     pendingChildren: null, // Used by persistent updates
     implementation: portal.implementation,

@@ -149,8 +149,8 @@ function getContextForSubtree(
   const fiber = getInstance(parentComponent);
   const parentContext = findCurrentUnmaskedContext(fiber);
 
-  if (fiber.tag === ClassComponent) {
-    const Component = fiber.type;
+  if (fiber[0] === ClassComponent) {
+    const Component = fiber[3];
     if (isLegacyContextProvider(Component)) {
       return processChildContext(fiber, Component, parentContext);
     }
@@ -175,7 +175,7 @@ function findHostInstance(component: Object): PublicInstance | null {
   if (hostFiber === null) {
     return null;
   }
-  return getPublicInstance(hostFiber.stateNode);
+  return getPublicInstance(hostFiber[4]);
 }
 
 function findHostInstanceWithWarning(
@@ -198,7 +198,7 @@ function findHostInstanceWithWarning(
     if (hostFiber === null) {
       return null;
     }
-    if (hostFiber.mode & StrictLegacyMode) {
+    if (hostFiber[16] & StrictLegacyMode) {
       const componentName = getComponentNameFromFiber(fiber) || 'Component';
       if (!didWarnAboutFindNodeInStrictMode[componentName]) {
         didWarnAboutFindNodeInStrictMode[componentName] = true;
@@ -206,7 +206,7 @@ function findHostInstanceWithWarning(
         const previousFiber = ReactCurrentFiberCurrent;
         try {
           setCurrentDebugFiberInDEV(hostFiber);
-          if (fiber.mode & StrictLegacyMode) {
+          if (fiber[16] & StrictLegacyMode) {
             console.error(
               '%s is deprecated in StrictMode. ' +
                 '%s was passed an instance of %s which is inside StrictMode. ' +
@@ -240,7 +240,7 @@ function findHostInstanceWithWarning(
         }
       }
     }
-    return getPublicInstance(hostFiber.stateNode);
+    return getPublicInstance(hostFiber[4]);
   }
   return findHostInstance(component);
 }
@@ -473,22 +473,22 @@ export function getPublicRootInstance(
   container: OpaqueRoot,
 ): React$Component<any, any> | PublicInstance | null {
   const containerFiber = container.current;
-  if (!containerFiber.child) {
+  if (!containerFiber[6]) {
     return null;
   }
-  switch (containerFiber.child.tag) {
+  switch (containerFiber[6][0]) {
     case HostSingleton:
     case HostComponent:
-      return getPublicInstance(containerFiber.child.stateNode);
+      return getPublicInstance(containerFiber[6][4]);
     default:
-      return containerFiber.child.stateNode;
+      return containerFiber[6][4];
   }
 }
 
 export function attemptSynchronousHydration(fiber: Fiber): void {
-  switch (fiber.tag) {
+  switch (fiber[0]) {
     case HostRoot: {
-      const root: FiberRoot = fiber.stateNode;
+      const root: FiberRoot = fiber[4];
       if (isRootDehydrated(root)) {
         // Flush the first scheduled "update".
         const lanes = getHighestPriorityPendingLanes(root);
@@ -513,7 +513,7 @@ export function attemptSynchronousHydration(fiber: Fiber): void {
 }
 
 function markRetryLaneImpl(fiber: Fiber, retryLane: Lane) {
-  const suspenseState: null | SuspenseState = fiber.memoizedState;
+  const suspenseState: null | SuspenseState = fiber[14];
   if (suspenseState !== null && suspenseState.dehydrated !== null) {
     suspenseState.retryLane = higherPriorityLane(
       suspenseState.retryLane,
@@ -525,14 +525,14 @@ function markRetryLaneImpl(fiber: Fiber, retryLane: Lane) {
 // Increases the priority of thenables when they resolve within this boundary.
 function markRetryLaneIfNotHydrated(fiber: Fiber, retryLane: Lane) {
   markRetryLaneImpl(fiber, retryLane);
-  const alternate = fiber.alternate;
+  const alternate = fiber[22];
   if (alternate) {
     markRetryLaneImpl(alternate, retryLane);
   }
 }
 
 export function attemptContinuousHydration(fiber: Fiber): void {
-  if (fiber.tag !== SuspenseComponent) {
+  if (fiber[0] !== SuspenseComponent) {
     // We ignore HostRoots here because we can't increase
     // their priority and they should not suspend on I/O,
     // since you have to wrap anything that might suspend in
@@ -548,7 +548,7 @@ export function attemptContinuousHydration(fiber: Fiber): void {
 }
 
 export function attemptHydrationAtCurrentPriority(fiber: Fiber): void {
-  if (fiber.tag !== SuspenseComponent) {
+  if (fiber[0] !== SuspenseComponent) {
     // We ignore HostRoots here because we can't increase
     // their priority other than synchronously flush it.
     return;
@@ -572,7 +572,7 @@ export function findHostInstanceWithNoPortals(
   if (hostFiber === null) {
     return null;
   }
-  return getPublicInstance(hostFiber.stateNode);
+  return getPublicInstance(hostFiber[4]);
 }
 
 let shouldErrorImpl: Fiber => ?boolean = fiber => null;
@@ -703,7 +703,7 @@ if (__DEV__) {
   const findHook = (fiber: Fiber, id: number) => {
     // For now, the "id" of stateful hooks is just the stateful hook index.
     // This may change in the future with e.g. nested hooks.
-    let currentHook = fiber.memoizedState;
+    let currentHook = fiber[14];
     while (currentHook !== null && id > 0) {
       currentHook = currentHook.next;
       id--;
@@ -729,7 +729,7 @@ if (__DEV__) {
       // (There's no appropriate action type for DevTools overrides.)
       // As a result though, React will see the scheduled update as a noop and bailout.
       // Shallow cloning props works as a workaround for now to bypass the bailout check.
-      fiber.memoizedProps = {...fiber.memoizedProps};
+      fiber[12] = {...fiber[12]};
 
       const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
       if (root !== null) {
@@ -753,7 +753,7 @@ if (__DEV__) {
       // (There's no appropriate action type for DevTools overrides.)
       // As a result though, React will see the scheduled update as a noop and bailout.
       // Shallow cloning props works as a workaround for now to bypass the bailout check.
-      fiber.memoizedProps = {...fiber.memoizedProps};
+      fiber[12] = {...fiber[12]};
 
       const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
       if (root !== null) {
@@ -778,7 +778,7 @@ if (__DEV__) {
       // (There's no appropriate action type for DevTools overrides.)
       // As a result though, React will see the scheduled update as a noop and bailout.
       // Shallow cloning props works as a workaround for now to bypass the bailout check.
-      fiber.memoizedProps = {...fiber.memoizedProps};
+      fiber[12] = {...fiber[12]};
 
       const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
       if (root !== null) {
@@ -789,9 +789,9 @@ if (__DEV__) {
 
   // Support DevTools props for function components, forwardRef, memo, host components, etc.
   overrideProps = (fiber: Fiber, path: Array<string | number>, value: any) => {
-    fiber.pendingProps = copyWithSet(fiber.memoizedProps, path, value);
-    if (fiber.alternate) {
-      fiber.alternate.pendingProps = fiber.pendingProps;
+    fiber[11] = copyWithSet(fiber[12], path, value);
+    if (fiber[22]) {
+      fiber[22][11] = fiber[11];
     }
     const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
     if (root !== null) {
@@ -799,9 +799,9 @@ if (__DEV__) {
     }
   };
   overridePropsDeletePath = (fiber: Fiber, path: Array<string | number>) => {
-    fiber.pendingProps = copyWithDelete(fiber.memoizedProps, path);
-    if (fiber.alternate) {
-      fiber.alternate.pendingProps = fiber.pendingProps;
+    fiber[11] = copyWithDelete(fiber[12], path);
+    if (fiber[22]) {
+      fiber[22][11] = fiber[11];
     }
     const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
     if (root !== null) {
@@ -813,9 +813,9 @@ if (__DEV__) {
     oldPath: Array<string | number>,
     newPath: Array<string | number>,
   ) => {
-    fiber.pendingProps = copyWithRename(fiber.memoizedProps, oldPath, newPath);
-    if (fiber.alternate) {
-      fiber.alternate.pendingProps = fiber.pendingProps;
+    fiber[11] = copyWithRename(fiber[12], oldPath, newPath);
+    if (fiber[22]) {
+      fiber[22][11] = fiber[11];
     }
     const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
     if (root !== null) {
@@ -844,7 +844,7 @@ function findHostInstanceByFiber(fiber: Fiber): Instance | TextInstance | null {
   if (hostFiber === null) {
     return null;
   }
-  return hostFiber.stateNode;
+  return hostFiber[4];
 }
 
 function emptyFindFiberByHostInstance(
